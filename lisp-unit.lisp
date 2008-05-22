@@ -106,7 +106,8 @@ For more information, see lisp-unit.html.
            #:assert-equality #:assert-prints #:assert-true
            #:get-test-code #:get-tests
            #:remove-all-tests #:remove-tests
-           #:logically-equal #:set-equal #:float-equal
+           #:logically-equal #:set-equal
+	   #:float-equal #:complex-equal
            #:use-debugger
            #:with-test-listener)
   )
@@ -443,6 +444,31 @@ than some epsilon."
       (> double-float-epsilon (abs (- x y))))
      ((or (typep x 'single-float) (typep y 'single-float))
       (> single-float-epsilon (abs (- x y))))
+     (t nil))))
+
+;;; (COMPLEX-EQUAL x y :epsilon) => true or false Return true if the
+;;; absolute difference of the real components and the absolute
+;;; difference of the imaginary components is less then epsilon. If an
+;;; epsilon is not specified and either x or y is (complex
+;;; single-float), the single-float-epsilon is used.
+(defun complex-equal (x y &key (epsilon nil epsilon-p))
+  "Return true if the absolute difference between Re(x),Re(y) and the
+absolute difference between Im(x),Im(y) is less than epsilon."
+  (and
+   (complexp x)
+   (complexp y)
+   (cond
+     (epsilon-p
+      (> epsilon (max (abs (realpart (- x y)))
+		      (abs (imagpart (- x y))))))
+     ((and (typep x '(complex double-float))
+	   (typep y '(complex double-float)))
+      (> double-float-epsilon (max (abs (realpart (- x y)))
+				   (abs (imagpart (- x y))))))
+     ((or (typep x '(complex single-float))
+	  (typep y '(complex single-float)))
+      (> single-float-epsilon (max (abs (realpart (- x y)))
+				   (abs (imagpart (- x y))))))
      (t nil))))
 
 (provide "lisp-unit")
