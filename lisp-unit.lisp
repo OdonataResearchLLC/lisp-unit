@@ -427,18 +427,18 @@ For more information, see lisp-unit.html.
        (subsetp l1 l2 :test test)
        (subsetp l2 l1 :test test)))
 
-;;; (FLOAT-EQUAL x y :epsilon) => true or false
+;;; (FLOAT-EQUAL x y &optional epsilon) => true or false
 ;;; Return true if the absolute difference between x and y is less
 ;;; than epsilon. If an epsilon is not specified and either x or y is
 ;;; single precision, the single-float-epsilon is used.
-(defun float-equal (x y &key (epsilon nil epsilon-p))
+(defun float-equal (x y &optional (epsilon nil epsilonp))
   "Return true if the absolute difference between x and y is less
 than some epsilon."
   (and
    (floatp x)
    (floatp y)
    (cond
-     (epsilon-p
+     (epsilonp
       (> epsilon (abs (- x y))))
      ((and (typep x 'double-float) (typep y 'double-float))
       (> double-float-epsilon (abs (- x y))))
@@ -446,29 +446,36 @@ than some epsilon."
       (> single-float-epsilon (abs (- x y))))
      (t nil))))
 
-;;; (COMPLEX-EQUAL x y :epsilon) => true or false Return true if the
-;;; absolute difference of the real components and the absolute
-;;; difference of the imaginary components is less then epsilon. If an
-;;; epsilon is not specified and either x or y is (complex
-;;; single-float), the single-float-epsilon is used.
-(defun complex-equal (x y &key (epsilon nil epsilon-p))
+;;; (COMPLEX-EQUAL x y &optional epsilon) => true or false
+;;; Return true if the absolute difference of the real components and
+;;; the absolute difference of the imaginary components is less then
+;;; epsilon. If an epsilon is not specified and either x or y is
+;;; (complex single-float), the single-float-epsilon is used.
+(defun complex-equal (x y &optional (epsilon nil epsilonp))
   "Return true if the absolute difference between Re(x),Re(y) and the
 absolute difference between Im(x),Im(y) is less than epsilon."
   (and
-   (complexp x)
-   (complexp y)
-   (cond
-     (epsilon-p
-      (> epsilon (max (abs (realpart (- x y)))
-		      (abs (imagpart (- x y))))))
-     ((and (typep x '(complex double-float))
-	   (typep y '(complex double-float)))
-      (> double-float-epsilon (max (abs (realpart (- x y)))
-				   (abs (imagpart (- x y))))))
-     ((or (typep x '(complex single-float))
-	  (typep y '(complex single-float)))
-      (> single-float-epsilon (max (abs (realpart (- x y)))
-				   (abs (imagpart (- x y))))))
-     (t nil))))
+   (typep x '(complex float))
+   (typep y '(complex float))
+   (if epsilonp
+       (and (float-equal (realpart x) (realpart y) epsilon)
+            (float-equal (imagpart x) (imagpart y) epsilon))
+       (and (float-equal (realpart x) (realpart y))
+            (float-equal (imagpart x) (imagpart y))))))
+
+;;; (NUMBER-EQUAL x y) => true or false
+;;; Return true if the numbers are equal using the appropriate
+;;; comparison.
+(defun number-equal (x y)
+  "Return true if the numbers are equal using the appropriate
+comparison."
+  (cond
+    ((and (floatp x) (floatp y))
+     (float-equal x y))
+    ((and (typep x '(complex float)) (typep y '(complex float)))
+     (complex-equal x y))
+    ((and (numberp x) (numberp y))
+     (equalp x y))
+    (t (error "Arguments must be numbers."))))
 
 (provide "lisp-unit")
