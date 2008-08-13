@@ -427,6 +427,14 @@ For more information, see lisp-unit.html.
        (subsetp l1 l2 :test test)
        (subsetp l2 l1 :test test)))
 
+;;; (ROUNDOFF-ERROR x y) => number
+;;; Return the error delta between the exact and approximate floating
+;;; point value
+(defun roundoff-error (exact approximate)
+  "Returned the error delta between the exact and approximate floating
+point value."
+  (abs (- (/ approximate exact) 1.0)))
+
 ;;; (FLOAT-EQUAL x y &optional epsilon) => true or false
 ;;; Return true if the absolute difference between x and y is less
 ;;; than epsilon. If an epsilon is not specified and either x or y is
@@ -438,12 +446,13 @@ than some epsilon."
    (floatp x)
    (floatp y)
    (cond
+     ((and (zerop x) (zerop y)))
      (epsilonp
-      (> epsilon (abs (- x y))))
+      (> epsilon (roundoff-error x y)))
      ((and (typep x 'double-float) (typep y 'double-float))
-      (> double-float-epsilon (abs (- x y))))
+      (> (* 2.0 double-float-epsilon) (roundoff-error x y)))
      ((or (typep x 'single-float) (typep y 'single-float))
-      (> single-float-epsilon (abs (- x y))))
+      (> (* 2.0 single-float-epsilon) (roundoff-error x y)))
      (t nil))))
 
 ;;; (COMPLEX-EQUAL x y &optional epsilon) => true or false
