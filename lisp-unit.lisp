@@ -433,7 +433,9 @@ For more information, see lisp-unit.html.
 (defun roundoff-error (exact approximate)
   "Returned the error delta between the exact and approximate floating
 point value."
-  (abs (- (/ approximate exact) 1.0)))
+  (if (or (= 0.0 exact) (= 0.0 approximate))
+      (+ exact approximate)
+      (abs (- (/ approximate exact) 1.0))))
 
 ;;; (FLOAT-EQUAL x y &optional epsilon) => true or false
 ;;; Return true if the absolute difference between x and y is less
