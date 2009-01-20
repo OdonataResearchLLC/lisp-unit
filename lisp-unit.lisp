@@ -107,7 +107,7 @@ For more information, see lisp-unit.html.
            #:get-test-code #:get-tests
            #:remove-all-tests #:remove-tests
            #:logically-equal #:set-equal
-	   #:equal-float #:equal-complex #:equal-number
+	   #:float-equal #:complex-equal #:number-equal
            #:use-debugger
            #:with-test-listener)
   )
@@ -437,12 +437,12 @@ point value."
 	   (+ exact approximate)
 	   (- (/ approximate exact) 1.0))))
 
-;;; (EQUAL-FLOAT float1 float2 &optional epsilon) => true or false
+;;; (FLOAT-EQUAL float1 float2 &optional epsilon) => true or false
 ;;; Return true if the absolute difference between float1 and float2
 ;;; is less than epsilon. If an epsilon is not specified and either
 ;;; float1 or float2 is single precision, the single-float-epsilon is
 ;;; used.
-(defun equal-float (float1 float2 &optional (epsilon nil epsilonp))
+(defun float-equal (float1 float2 &optional (epsilon nil epsilonp))
   "Return true if the absolute difference between float1 and float2 is
 less than some epsilon."
   (and
@@ -458,13 +458,13 @@ less than some epsilon."
       (> (* 2.0 single-float-epsilon) (roundoff-error float1 float2)))
      (t nil))))
 
-;;; (EQUAL-COMPLEX complex1 complex2 &optional epsilon) => true or false
+;;; (COMPLEX-EQUAL complex1 complex2 &optional epsilon) => true or false
 ;;; Return true if the absolute difference of the real components and
 ;;; the absolute difference of the imaginary components is less then
 ;;; epsilon. If an epsilon is not specified and either complex1 or
 ;;; complex2 is (complex single-float), the single-float-epsilon is
 ;;; used.
-(defun equal-complex (complex1 complex2 &optional (epsilon nil epsilonp))
+(defun complex-equal (complex1 complex2 &optional (epsilon nil epsilonp))
   "Return true if the absolute difference between Re(complex1),
 Re(complex2) and the absolute difference between Im(complex1),
 Im(complex2) is less than epsilon."
@@ -472,26 +472,26 @@ Im(complex2) is less than epsilon."
    (typep complex1 '(complex float))
    (typep complex2 '(complex float))
    (if epsilonp
-       (and (equal-float (realpart complex1) (realpart complex2) epsilon)
-            (equal-float (imagpart complex1) (imagpart complex2) epsilon))
-       (and (equal-float (realpart complex1) (realpart complex2))
-            (equal-float (imagpart complex1) (imagpart complex2))))))
+       (and (float-equal (realpart complex1) (realpart complex2) epsilon)
+            (float-equal (imagpart complex1) (imagpart complex2) epsilon))
+       (and (float-equal (realpart complex1) (realpart complex2))
+            (float-equal (imagpart complex1) (imagpart complex2))))))
 
-;;; (EQUAL-NUMBER number1 number2) => true or false
+;;; (NUMBER-EQUAL number1 number2) => true or false
 ;;; Return true if the numbers are equal using the appropriate
 ;;; comparison.
-(defun equal-number (number1 number2 &optional (epsilon nil epsilonp))
+(defun number-equal (number1 number2 &optional (epsilon nil epsilonp))
   "Return true if the numbers are equal using the appropriate
 comparison."
   (cond
     ((and (floatp number1) (floatp number2))
      (if epsilonp
-	 (equal-float number1 number2 epsilon)
-	 (equal-float number1 number2)))
+	 (float-equal number1 number2 epsilon)
+	 (float-equal number1 number2)))
     ((and (typep number1 '(complex float)) (typep number2 '(complex float)))
      (if epsilonp
-	 (equal-complex number1 number2 epsilon)
-	 (equal-complex number1 number2)))
+	 (complex-equal number1 number2 epsilon)
+	 (complex-equal number1 number2)))
     ((and (numberp number1) (numberp number2))
      (= number1 number2))
     (t (error "~A and ~A are not numbers." number1 number2))))
