@@ -430,7 +430,8 @@ For more information, see lisp-unit.html.
 
 ;;; (ROUNDOFF-ERROR x y) => number
 ;;; Return the error delta between the exact and approximate floating
-;;; point value
+;;; point value.
+;;; Equation 1.1 in NumLinAlg
 (defun roundoff-error (exact approximate)
   "Returned the error delta between the exact and approximate floating
 point value."
@@ -523,5 +524,10 @@ comparison."
   "Return true if the elements of the array are equal."
   (when (dimensions-equal array1 array2)
     (element-equal array1 array2 nil (array-dimensions array1) epsilon)))
+
+;;;; References
+;;;; [NumLinAlg] James W. Demmel "Applied Numerical Linear Algebra",
+;;;;             Society for Industrial and Applied Mathematics, 1997
+;;;;             ISBN: 0-89871-389-7
 
 (provide "lisp-unit")
