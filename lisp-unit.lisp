@@ -108,6 +108,7 @@ For more information, see lisp-unit.html.
            #:remove-all-tests #:remove-tests
            #:logically-equal #:set-equal
 	   #:float-equal #:complex-equal #:number-equal
+	   #:array-equal
            #:use-debugger
            #:with-test-listener)
   )
@@ -442,7 +443,7 @@ point value."
 ;;; is less than epsilon. If an epsilon is not specified and either
 ;;; float1 or float2 is single precision, the single-float-epsilon is
 ;;; used.
-(defun float-equal (float1 float2 &optional (epsilon nil epsilonp))
+(defun float-equal (float1 float2 &optional epsilon)
   "Return true if the absolute difference between float1 and float2 is
 less than some epsilon."
   (and
@@ -450,7 +451,7 @@ less than some epsilon."
    (floatp float2)
    (cond
      ((and (zerop float1) (zerop float2)))
-     (epsilonp
+     (epsilon
       (> epsilon (roundoff-error float1 float2)))
      ((and (typep float1 'double-float) (typep float2 'double-float))
       (> (* 2.0 double-float-epsilon) (roundoff-error float1 float2)))
@@ -464,36 +465,63 @@ less than some epsilon."
 ;;; epsilon. If an epsilon is not specified and either complex1 or
 ;;; complex2 is (complex single-float), the single-float-epsilon is
 ;;; used.
-(defun complex-equal (complex1 complex2 &optional (epsilon nil epsilonp))
+(defun complex-equal (complex1 complex2 &optional epsilon)
   "Return true if the absolute difference between Re(complex1),
 Re(complex2) and the absolute difference between Im(complex1),
 Im(complex2) is less than epsilon."
   (and
    (typep complex1 '(complex float))
    (typep complex2 '(complex float))
-   (if epsilonp
-       (and (float-equal (realpart complex1) (realpart complex2) epsilon)
-            (float-equal (imagpart complex1) (imagpart complex2) epsilon))
-       (and (float-equal (realpart complex1) (realpart complex2))
-            (float-equal (imagpart complex1) (imagpart complex2))))))
+   (float-equal (realpart complex1) (realpart complex2) epsilon)
+   (float-equal (imagpart complex1) (imagpart complex2) epsilon)))
 
 ;;; (NUMBER-EQUAL number1 number2) => true or false
 ;;; Return true if the numbers are equal using the appropriate
 ;;; comparison.
-(defun number-equal (number1 number2 &optional (epsilon nil epsilonp))
+(defun number-equal (number1 number2 &optional epsilon)
   "Return true if the numbers are equal using the appropriate
 comparison."
   (cond
     ((and (floatp number1) (floatp number2))
-     (if epsilonp
-	 (float-equal number1 number2 epsilon)
-	 (float-equal number1 number2)))
+     (float-equal number1 number2 epsilon))
     ((and (typep number1 '(complex float)) (typep number2 '(complex float)))
-     (if epsilonp
-	 (complex-equal number1 number2 epsilon)
-	 (complex-equal number1 number2)))
+     (complex-equal number1 number2 epsilon))
     ((and (numberp number1) (numberp number2))
      (= number1 number2))
     (t (error "~A and ~A are not numbers." number1 number2))))
+
+;;; (ELEMENT-EQUAL array1 array2 indice dimensions) => true or false
+;;; A utility function for ARRAY-EQUAL.
+(defun element-equal (array1 array2 indices dimensions &optional epsilon)
+  "Return true if the index of array1 equals array2."
+  (let* ((rank (first dimensions))
+	 (remaining (rest dimensions))
+	 (update-result
+	  (if remaining
+	      (lambda (index)
+		(element-equal array1 array2
+			       (cons index indices) remaining epsilon))
+	      (lambda (index)
+		(number-equal (apply #'aref array1 index (reverse indices))
+			      (apply #'aref array2 index (reverse indices))
+			      epsilon)))))
+    (do ((index 0 (1+ index))
+	 (result t (funcall update-result index)))
+	((or (not result) (>= index rank)) result))))
+
+;;; (DIMENSIONS-EQUAL array1 array2) => true or false
+;;; A utility function for ARRAY-EQUAL
+(defun dimensions-equal (array1 array2)
+  "Return trun if ARRAY1 and ARRAY2 are equal dimensions."
+  (and
+   (= (array-rank array1) (array-rank array2))
+   (equal (array-dimensions array1) (array-dimensions array2))))
+
+;;; (ARRAY-EQUAL array1 array2) => true or false
+;;; Return true of the elements of the array are equal.
+(defun array-equal (array1 array2 &optional epsilon)
+  "Return true if the elements of the array are equal."
+  (when (dimensions-equal array1 array2)
+    (element-equal array1 array2 nil (array-dimensions array1) epsilon)))
 
 (provide "lisp-unit")
