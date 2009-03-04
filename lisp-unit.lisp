@@ -109,6 +109,7 @@ For more information, see lisp-unit.html.
            #:logically-equal #:set-equal
 	   #:float-equal #:complex-equal #:number-equal
 	   #:array-equal
+	   #:significant-figures-equal
            #:use-debugger
            #:with-test-listener)
   )
@@ -524,6 +525,26 @@ comparison."
   "Return true if the elements of the array are equal."
   (when (dimensions-equal array1 array2)
     (element-equal array1 array2 nil (array-dimensions array1) epsilon)))
+
+;;; (NORMALIZE-FLOAT significand &optional exponent) => significand,exponent
+(defun normalize-float (significand &optional (exponent 0))
+  "Return the normalized floating point number and exponent."
+  (cond
+    ((> (abs significand) 10)
+     (normalize-float (* significand 0.10) (1+ exponent)))
+    ((< (abs significand) 1)
+     (normalize-float (* significand 10.0) (1- exponent)))
+    (t (values significand exponent))))
+
+;;; (SIGNIFICANT-FIGURES-EQUAL float1 float2 significant-figures) => true or false
+(defun significant-figures-equal (float1 float2 significant-figures)
+  "Return true if the floating point numbers have equal significant
+figures."
+  (multiple-value-bind (sig1 exp1) (normalize-float float1)
+    (multiple-value-bind (sig2 exp2) (normalize-float float2)
+      (and (= exp1 exp2)
+	   (< (abs (- sig1 sig2))
+	      (* (float 5 float1) (expt (float 10 float2) (- significant-figures))))))))
 
 ;;;; References
 ;;;; [NumLinAlg] James W. Demmel "Applied Numerical Linear Algebra",
