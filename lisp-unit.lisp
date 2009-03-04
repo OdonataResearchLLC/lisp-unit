@@ -494,7 +494,7 @@ comparison."
 
 ;;; (ELEMENT-EQUAL array1 array2 indice dimensions) => true or false
 ;;; A utility function for ARRAY-EQUAL.
-(defun element-equal (array1 array2 indices dimensions &optional epsilon)
+(defun element-equal (array1 array2 indices dimensions &key (test #'number-equal))
   "Return true if the index of array1 equals array2."
   (let* ((rank (first dimensions))
 	 (remaining (rest dimensions))
@@ -502,29 +502,21 @@ comparison."
 	  (if remaining
 	      (lambda (index)
 		(element-equal array1 array2
-			       (cons index indices) remaining epsilon))
+			       (cons index indices) remaining :test test))
 	      (lambda (index)
-		(number-equal (apply #'aref array1 index (reverse indices))
-			      (apply #'aref array2 index (reverse indices))
-			      epsilon)))))
+		(funcall test
+			 (apply #'aref array1 index (reverse indices))
+			 (apply #'aref array2 index (reverse indices)))))))
     (do ((index 0 (1+ index))
 	 (result t (funcall update-result index)))
 	((or (not result) (>= index rank)) result))))
 
-;;; (DIMENSIONS-EQUAL array1 array2) => true or false
-;;; A utility function for ARRAY-EQUAL
-(defun dimensions-equal (array1 array2)
-  "Return trun if ARRAY1 and ARRAY2 are equal dimensions."
-  (and
-   (= (array-rank array1) (array-rank array2))
-   (equal (array-dimensions array1) (array-dimensions array2))))
-
 ;;; (ARRAY-EQUAL array1 array2) => true or false
 ;;; Return true of the elements of the array are equal.
-(defun array-equal (array1 array2 &optional epsilon)
+(defun array-equal (array1 array2 &key (test #'number-equal))
   "Return true if the elements of the array are equal."
-  (when (dimensions-equal array1 array2)
-    (element-equal array1 array2 nil (array-dimensions array1) epsilon)))
+  (when (equal (array-dimensions array1) (array-dimensions array2))
+    (element-equal array1 array2 nil (array-dimensions array1) :test test)))
 
 ;;; (NORMALIZE-FLOAT significand &optional exponent) => significand,exponent
 (defun normalize-float (significand &optional (exponent 0))
