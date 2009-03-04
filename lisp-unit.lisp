@@ -110,6 +110,8 @@ For more information, see lisp-unit.html.
 	   #:float-equal #:complex-equal #:number-equal
 	   #:array-equal
 	   #:significant-figures-equal
+	   #:3-sigfig-equal #:4-sigfig-equal
+	   #:5-sigfig-equal #:6-sigfig-equal
            #:use-debugger
            #:with-test-listener)
   )
@@ -537,6 +539,22 @@ figures."
       (and (= exp1 exp2)
 	   (< (abs (- sig1 sig2))
 	      (* (float 5 float1) (expt (float 10 float2) (- significant-figures))))))))
+
+(defun 3-sigfig-equal (float1 float2)
+  "Return true if the floats are equal to 3 significant figures."
+  (significant-figures-equal float1 float2 3))
+
+(defun 4-sigfig-equal (float1 float2)
+  "Return true if the floats are equal to 4 significant figures."
+  (significant-figures-equal float1 float2 4))
+
+(defun 5-sigfig-equal (float1 float2)
+  "Return true if the floats are equal to 5 significant figures."
+  (significant-figures-equal float1 float2 5))
+
+(defun 6-sigfig-equal (float1 float2)
+  "Return true if the floats are equal to 6 significant figures."
+  (significant-figures-equal float1 float2 6))
 
 ;;;; References
 ;;;; [NumLinAlg] James W. Demmel "Applied Numerical Linear Algebra",
