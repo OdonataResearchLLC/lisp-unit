@@ -530,7 +530,7 @@ comparison."
 (defun normalize-float (significand &optional (exponent 0))
   "Return the normalized floating point number and exponent."
   (cond
-    ((> (abs significand) 10)
+    ((>= (abs significand) 10)
      (normalize-float (* significand 0.10) (1+ exponent)))
     ((< (abs significand) 1)
      (normalize-float (* significand 10.0) (1- exponent)))
