@@ -16,7 +16,7 @@
            #:use-debugger
            #:with-test-listener
 	   ;; Floating point predicates and assertions
-	   #:*epsilon* #:*significant-figures* #:*element-test*
+	   #:*epsilon* #:*significant-figures*
 	   #:float-equal #:assert-float-equal
 	   #:complex-equal #:assert-complex-equal
 	   #:number-equal #:assert-number-equal
