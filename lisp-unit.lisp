@@ -524,8 +524,10 @@ comparison."
 (defun normalize-float (significand &optional (exponent 0))
   "Return the normalized floating point number and exponent."
   (cond
+    ((zerop significand)
+     (values significand 0))
     ((>= (abs significand) 10)
-     (normalize-float (* significand 0.10) (1+ exponent)))
+     (normalize-float (/ significand 10.0) (1+ exponent)))
     ((< (abs significand) 1)
      (normalize-float (* significand 10.0) (1- exponent)))
     (t (values significand exponent))))
@@ -534,11 +536,17 @@ comparison."
 (defun significant-figures-equal (float1 float2 significant-figures)
   "Return true if the floating point numbers have equal significant
 figures."
-  (multiple-value-bind (sig1 exp1) (normalize-float float1)
-    (multiple-value-bind (sig2 exp2) (normalize-float float2)
-      (and (= exp1 exp2)
-	   (< (abs (- sig1 sig2))
-	      (* (float 5 float1) (expt (float 10 float2) (- significant-figures))))))))
+  (let ((delta (* (float 5 float1) (expt (float 10 float2) (- significant-figures)))))
+    (if (or (zerop float1) (zerop float2))
+	(< (abs (+ float1 float2)) delta)
+	(multiple-value-bind (sig1 exp1) (normalize-float float1)
+	  (multiple-value-bind (sig2 exp2) (normalize-float float2)
+	    (and (= exp1 exp2)
+		 (< (abs (- sig1 sig2)) delta)))))))
+
+(defun 2-sigfig-equal (float1 float2)
+  "Return true if the floats are equal to 2 significant figures."
+  (significant-figures-equal float1 float2 2))
 
 (defun 3-sigfig-equal (float1 float2)
   "Return true if the floats are equal to 3 significant figures."
