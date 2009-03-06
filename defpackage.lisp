@@ -21,6 +21,7 @@
 	   #:complex-equal #:assert-complex-equal
 	   #:number-equal #:assert-number-equal
 	   #:sigfig-equal #:assert-sigfig-equal
-	   #:array-equal #:assert-array-equal))
+	   #:array-equal #:assert-array-equal
+	   #:numerical-equal #:assert-numerical-equal))
 
 (pushnew :lisp-unit common-lisp:*features*)

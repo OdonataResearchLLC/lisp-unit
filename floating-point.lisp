@@ -128,3 +128,23 @@ figures."
 (defmacro assert-array-equal (element-test expected form &rest extras)
   (expand-assert :equal form form expected extras
 		 :test `(lambda (a1 a2) (array-equal a1 a2 :test ,element-test))))
+
+;;; (NUMERICAL-EQUAL result1 result2) => true or false
+;;; This is a universal wrapper function used by Liam Healy. It is
+;;; implemented to support testing in GSLL. While the interface is
+;;; identical to previous versions, the implementation details are
+;;; slightly different to use the routines here.
+(defun numerical-equal (result1 result2 &key (test #'number-equal))
+  (cond
+    ((and (numberp result1) (numberp result2))
+     (funcall test result1 result2))
+    ((and (typep result1 'sequence) (typep result2 'sequence))
+     (when (= (length result1) (length result2))
+       (every (lambda (r1 r2) (numerical-equal r1 r2 :test test))
+	      result1 result2)))
+    ((and (arrayp result1) (arrayp result2))
+     (array-equal result1 result2 :test test))
+    (t (error "~A and/or ~A are not valid arguments." result1 result2))))
+
+(defmacro assert-numerical-equal (expected form &rest extras)
+  (expand-assert :equal form form expected extras :test #'numerical-equal))
