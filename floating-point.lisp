@@ -7,6 +7,10 @@
 
 (common-lisp:in-package :lisp-unit)
 
+(defparameter *epsilon* nil
+  "A place for the user to set the error epsilon if the defaults are
+not acceptable.")
+
 ;;; (ROUNDOFF-ERROR x y) => number
 ;;; Return the error delta between the exact and approximate floating
 ;;; point value.
@@ -23,7 +27,7 @@ point value."
 ;;; is less than epsilon. If an epsilon is not specified and either
 ;;; float1 or float2 is single precision, the single-float-epsilon is
 ;;; used.
-(defun float-equal (float1 float2 &optional epsilon)
+(defun float-equal (float1 float2 &optional (epsilon *epsilon*))
   "Return true if the absolute difference between float1 and float2 is
 less than some epsilon."
   (and
@@ -39,13 +43,16 @@ less than some epsilon."
       (> (* 2.0 single-float-epsilon) (roundoff-error float1 float2)))
      (t nil))))
 
+(defmacro assert-float-equal (expected form &rest extras)
+  (expand-assert :equal form form expected extras :test #'float-equal))
+
 ;;; (COMPLEX-EQUAL complex1 complex2 &optional epsilon) => true or false
 ;;; Return true if the absolute difference of the real components and
 ;;; the absolute difference of the imaginary components is less then
 ;;; epsilon. If an epsilon is not specified and either complex1 or
 ;;; complex2 is (complex single-float), the single-float-epsilon is
 ;;; used.
-(defun complex-equal (complex1 complex2 &optional epsilon)
+(defun complex-equal (complex1 complex2 &optional (epsilon *epsilon*))
   "Return true if the absolute difference between Re(complex1),
 Re(complex2) and the absolute difference between Im(complex1),
 Im(complex2) is less than epsilon."
@@ -55,10 +62,13 @@ Im(complex2) is less than epsilon."
    (float-equal (realpart complex1) (realpart complex2) epsilon)
    (float-equal (imagpart complex1) (imagpart complex2) epsilon)))
 
+(defmacro assert-complex-equal (expected form &rest extras)
+  (expand-assert :equal form form expected extras :test #'complex-equal))
+
 ;;; (NUMBER-EQUAL number1 number2) => true or false
 ;;; Return true if the numbers are equal using the appropriate
 ;;; comparison.
-(defun number-equal (number1 number2 &optional epsilon)
+(defun number-equal (number1 number2 &optional (epsilon *epsilon*))
   "Return true if the numbers are equal using the appropriate
 comparison."
   (cond
@@ -69,6 +79,40 @@ comparison."
     ((and (numberp number1) (numberp number2))
      (= number1 number2))
     (t (error "~A and ~A are not numbers." number1 number2))))
+
+(defmacro assert-number-equal (expected form &rest extras)
+  (expand-assert :equal form form expected extras :test #'number-equal))
+
+;;; (NORMALIZE-FLOAT significand &optional exponent) => significand,exponent
+(defun normalize-float (significand &optional (exponent 0))
+  "Return the normalized floating point number and exponent."
+  (cond
+    ((zerop significand)
+     (values significand 0))
+    ((>= (abs significand) 10)
+     (normalize-float (/ significand 10.0) (1+ exponent)))
+    ((< (abs significand) 1)
+     (normalize-float (* significand 10.0) (1- exponent)))
+    (t (values significand exponent))))
+
+;;; (SIGFIG-EQUAL float1 float2 significant-figures) => true or false
+(defun sigfig-equal (float1 float2 significant-figures)
+  "Return true if the floating point numbers have equal significant
+figures."
+  ;; Convert 5 to precision of FLOAT1 and 10 to precision of
+  ;; FLOAT2. Then, rely on Rule of Float and Rational Contagion, CLHS
+  ;; 12.1.4.1, to obtain a DELTA of the proper precision.
+  (let ((delta (* (float 5 float1) (expt (float 10 float2) (- significant-figures)))))
+    (if (or (zerop float1) (zerop float2))
+	(< (abs (+ float1 float2)) delta)
+	(multiple-value-bind (sig1 exp1) (normalize-float float1)
+	  (multiple-value-bind (sig2 exp2) (normalize-float float2)
+	    (and (= exp1 exp2)
+		 (< (abs (- sig1 sig2)) delta)))))))
+
+(defmacro assert-sigfig-equal (significant-figures expected form &rest extras)
+  (expand-assert :equal form form expected extras
+		 :test (lambda (f1 f2) (sigfig-equal f1 f2 significant-figures))))
 
 ;;; (ELEMENT-EQUAL array1 array2 indice dimensions) => true or false
 ;;; A utility function for ARRAY-EQUAL.
@@ -95,50 +139,3 @@ comparison."
   "Return true if the elements of the array are equal."
   (when (equal (array-dimensions array1) (array-dimensions array2))
     (element-equal array1 array2 nil (array-dimensions array1) :test test)))
-
-;;; (NORMALIZE-FLOAT significand &optional exponent) => significand,exponent
-(defun normalize-float (significand &optional (exponent 0))
-  "Return the normalized floating point number and exponent."
-  (cond
-    ((zerop significand)
-     (values significand 0))
-    ((>= (abs significand) 10)
-     (normalize-float (/ significand 10.0) (1+ exponent)))
-    ((< (abs significand) 1)
-     (normalize-float (* significand 10.0) (1- exponent)))
-    (t (values significand exponent))))
-
-;;; (SIGNIFICANT-FIGURES-EQUAL float1 float2 significant-figures) => true or false
-(defun significant-figures-equal (float1 float2 significant-figures)
-  "Return true if the floating point numbers have equal significant
-figures."
-  ;; Convert 5 to precision of FLOAT1 and 10 to precision of
-  ;; FLOAT2. Then, rely on Rule of Float and Rational Contagion, CLHS
-  ;; 12.1.4.1, to obtain a DELTA of the proper precision.
-  (let ((delta (* (float 5 float1) (expt (float 10 float2) (- significant-figures)))))
-    (if (or (zerop float1) (zerop float2))
-	(< (abs (+ float1 float2)) delta)
-	(multiple-value-bind (sig1 exp1) (normalize-float float1)
-	  (multiple-value-bind (sig2 exp2) (normalize-float float2)
-	    (and (= exp1 exp2)
-		 (< (abs (- sig1 sig2)) delta)))))))
-
-(defun 2-sigfig-equal (float1 float2)
-  "Return true if the floats are equal to 2 significant figures."
-  (significant-figures-equal float1 float2 2))
-
-(defun 3-sigfig-equal (float1 float2)
-  "Return true if the floats are equal to 3 significant figures."
-  (significant-figures-equal float1 float2 3))
-
-(defun 4-sigfig-equal (float1 float2)
-  "Return true if the floats are equal to 4 significant figures."
-  (significant-figures-equal float1 float2 4))
-
-(defun 5-sigfig-equal (float1 float2)
-  "Return true if the floats are equal to 5 significant figures."
-  (significant-figures-equal float1 float2 5))
-
-(defun 6-sigfig-equal (float1 float2)
-  "Return true if the floats are equal to 6 significant figures."
-  (significant-figures-equal float1 float2 6))
