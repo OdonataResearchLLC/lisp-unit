@@ -10,11 +10,11 @@
 ;;; (ROUNDOFF-ERROR x y) => number
 ;;; Return the error delta between the exact and approximate floating
 ;;; point value.
-;;; Equation 1.1 in NumLinAlg
+;;; [NumLinAlg] : Equation 1.1, pg. 12
 (defun roundoff-error (exact approximate)
   "Returned the error delta between the exact and approximate floating
 point value."
-  (abs (if (or (= 0.0 exact) (= 0.0 approximate))
+  (abs (if (or (zerop exact) (zerop approximate))
 	   (+ exact approximate)
 	   (- (/ approximate exact) 1.0))))
 
@@ -112,6 +112,9 @@ comparison."
 (defun significant-figures-equal (float1 float2 significant-figures)
   "Return true if the floating point numbers have equal significant
 figures."
+  ;; Convert 5 to precision of FLOAT1 and 10 to precision of
+  ;; FLOAT2. Then, rely on Rule of Float and Rational Contagion, CLHS
+  ;; 12.1.4.1, to obtain a DELTA of the proper precision.
   (let ((delta (* (float 5 float1) (expt (float 10 float2) (- significant-figures)))))
     (if (or (zerop float1) (zerop float2))
 	(< (abs (+ float1 float2)) delta)
