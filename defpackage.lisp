@@ -16,10 +16,11 @@
            #:use-debugger
            #:with-test-listener
 	   ;; Floating point predicates and assertions
+	   #:*epsilon* #:*significant-figures* #:*element-test*
 	   #:float-equal #:assert-float-equal
 	   #:complex-equal #:assert-complex-equal
 	   #:number-equal #:assert-number-equal
 	   #:sigfig-equal #:assert-sigfig-equal
-	   #:array-equal))
+	   #:array-equal #:assert-array-equal))
 
 (pushnew :lisp-unit common-lisp:*features*)

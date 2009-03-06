@@ -8,15 +8,17 @@
 (common-lisp:in-package :lisp-unit)
 
 (defparameter *epsilon* nil
-  "A place for the user to set the error epsilon if the defaults are
-not acceptable.")
+  "Set the error epsilon if the defaults are not acceptable.")
+
+(defparameter *significant-figures* 4
+  "Default to 4 significant figures.")
 
 ;;; (ROUNDOFF-ERROR x y) => number
 ;;; Return the error delta between the exact and approximate floating
 ;;; point value.
 ;;; [NumLinAlg] : Equation 1.1, pg. 12
 (defun roundoff-error (exact approximate)
-  "Returned the error delta between the exact and approximate floating
+  "Return the error delta between the exact and approximate floating
 point value."
   (abs (if (or (zerop exact) (zerop approximate))
 	   (+ exact approximate)
@@ -96,12 +98,12 @@ comparison."
     (t (values significand exponent))))
 
 ;;; (SIGFIG-EQUAL float1 float2 significant-figures) => true or false
-(defun sigfig-equal (float1 float2 significant-figures)
+(defun sigfig-equal (float1 float2 &optional (significant-figures *significant-figures*))
   "Return true if the floating point numbers have equal significant
 figures."
-  ;; Convert 5 to precision of FLOAT1 and 10 to precision of
-  ;; FLOAT2. Then, rely on Rule of Float and Rational Contagion, CLHS
-  ;; 12.1.4.1, to obtain a DELTA of the proper precision.
+  ;; Convert 5 to precision of FLOAT1 and 10 to precision of FLOAT2.
+  ;; Then, rely on Rule of Float and Rational Contagion, CLHS 12.1.4.1,
+  ;; to obtain a DELTA of the proper precision.
   (let ((delta (* (float 5 float1) (expt (float 10 float2) (- significant-figures)))))
     (if (or (zerop float1) (zerop float2))
 	(< (abs (+ float1 float2)) delta)
@@ -114,28 +116,15 @@ figures."
   (expand-assert :equal form form expected extras
 		 :test (lambda (f1 f2) (sigfig-equal f1 f2 significant-figures))))
 
-;;; (ELEMENT-EQUAL array1 array2 indice dimensions) => true or false
-;;; A utility function for ARRAY-EQUAL.
-(defun element-equal (array1 array2 indices dimensions &key (test #'number-equal))
-  "Return true if the index of array1 equals array2."
-  (let* ((rank (first dimensions))
-	 (remaining (rest dimensions))
-	 (update-result
-	  (if remaining
-	      (lambda (index)
-		(element-equal array1 array2
-			       (cons index indices) remaining :test test))
-	      (lambda (index)
-		(funcall test
-			 (apply #'aref array1 index (reverse indices))
-			 (apply #'aref array2 index (reverse indices)))))))
-    (do ((index 0 (1+ index))
-	 (result t (funcall update-result index)))
-	((or (not result) (>= index rank)) result))))
-
 ;;; (ARRAY-EQUAL array1 array2) => true or false
 ;;; Return true of the elements of the array are equal.
 (defun array-equal (array1 array2 &key (test #'number-equal))
   "Return true if the elements of the array are equal."
   (when (equal (array-dimensions array1) (array-dimensions array2))
-    (element-equal array1 array2 nil (array-dimensions array1) :test test)))
+    (every test
+     (make-array (reduce #'* (array-dimensions array1)) :displaced-to array1)
+     (make-array (reduce #'* (array-dimensions array2)) :displaced-to array2))))
+
+(defmacro assert-array-equal (element-test expected form &rest extras)
+  (expand-assert :equal form form expected extras
+		 :test `(lambda (a1 a2) (array-equal a1 a2 :test ,element-test))))
