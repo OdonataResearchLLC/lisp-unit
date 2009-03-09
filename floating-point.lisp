@@ -53,34 +53,43 @@ point value."
 	   (+ exact approximate)
 	   (- (/ approximate exact) 1.0))))
 
+
 ;;; (FLOAT-EQUAL float1 float2 &optional epsilon) => true or false
+(defun %float-equal (float1 float2 epsilon)
+  "Internal version that does not verify arguments as floats."
+  (cond
+    ((and (zerop float1) (zerop float2)))
+    (epsilon
+     (> epsilon (roundoff-error float1 float2)))
+    ((and (typep float1 'double-float) (typep float2 'double-float))
+     (> (* 2.0 double-float-epsilon) (roundoff-error float1 float2)))
+    ((or (typep float1 'single-float) (typep float2 'single-float))
+     (> (* 2.0 single-float-epsilon) (roundoff-error float1 float2)))
+    (t nil)))
+
 (defun float-equal (float1 float2 &optional (epsilon *epsilon*))
   "Return true if the absolute difference between float1 and float2 is
 less than some epsilon."
   (when (and (floatp float1) (floatp float2))
-    (cond
-      ((and (zerop float1) (zerop float2)))
-      (epsilon
-       (> epsilon (roundoff-error float1 float2)))
-      ((and (typep float1 'double-float) (typep float2 'double-float))
-       (> (* 2.0 double-float-epsilon) (roundoff-error float1 float2)))
-      ((or (typep float1 'single-float) (typep float2 'single-float))
-       (> (* 2.0 single-float-epsilon) (roundoff-error float1 float2)))
-      (t nil))))
+    (%float-equal float1 float2 epsilon)))
 
 (defmacro assert-float-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'float-equal))
 
 ;;; (COMPLEX-EQUAL complex1 complex2 &optional epsilon) => true or false
+(defun %complex-equal (complex1 complex2 epsilon)
+  "Internal version that does not verify arguments as (complex float)."
+  (and
+   (%float-equal (realpart complex1) (realpart complex2) epsilon)
+   (%float-equal (imagpart complex1) (imagpart complex2) epsilon)))
+
 (defun complex-equal (complex1 complex2 &optional (epsilon *epsilon*))
   "Return true if the absolute difference between Re(complex1),
 Re(complex2) and the absolute difference between Im(complex1),
 Im(complex2) is less than epsilon."
-  (and
-   (typep complex1 '(complex float))
-   (typep complex2 '(complex float))
-   (float-equal (realpart complex1) (realpart complex2) epsilon)
-   (float-equal (imagpart complex1) (imagpart complex2) epsilon)))
+  (when (and (typep complex1 '(complex float))
+	     (typep complex2 '(complex float)))
+    (%complex-equal complex1 complex2 epsilon)))
 
 (defmacro assert-complex-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'complex-equal))
@@ -91,9 +100,9 @@ Im(complex2) is less than epsilon."
 comparison."
   (cond
     ((and (floatp number1) (floatp number2))
-     (float-equal number1 number2 epsilon))
+     (%float-equal number1 number2 epsilon))
     ((and (typep number1 '(complex float)) (typep number2 '(complex float)))
-     (complex-equal number1 number2 epsilon))
+     (%complex-equal number1 number2 epsilon))
     ((and (numberp number1) (numberp number2))
      (= number1 number2))
     (t (error "~A and ~A are not numbers." number1 number2))))
