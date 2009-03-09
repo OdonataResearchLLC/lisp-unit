@@ -137,8 +137,12 @@ figures."
   "Return true if the elements of the array are equal."
   (when (equal (array-dimensions array1) (array-dimensions array2))
     (every test
-     (make-array (reduce #'* (array-dimensions array1)) :displaced-to array1)
-     (make-array (reduce #'* (array-dimensions array2)) :displaced-to array2))))
+     (make-array (reduce #'* (array-dimensions array1))
+		 :element-type (array-element-type array1)
+		 :displaced-to array1)
+     (make-array (reduce #'* (array-dimensions array2))
+		 :element-type (array-element-type array2)
+		 :displaced-to array2))))
 
 (defmacro assert-array-equal (element-test expected form &rest extras)
   (expand-assert :equal form form expected extras
