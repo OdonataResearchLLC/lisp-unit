@@ -1,16 +1,11 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html><head>
 <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-
-
-   <title>lisp-unit</title>
-<link href="lisp-unit_files/cs325.css" rel="stylesheet" type="text/css">
+   <title>LISP-UNIT</title>
+<link href="lisp-unit.css" rel="stylesheet" type="text/css">
 </head><body>
-<div id="logo">
-<a class="plain" href="http://www.cs.northwestern.edu/academics/courses/325/index.html" target="_top">
-<img src="lisp-unit_files/cs325logo.gif" alt="CS 325 Logo" border="0"></a>
-</div>
-<div id="banner">LispUnit</div>
+
+<div id="banner">LISP-UNIT</div>
 
 <p><strong>lisp-unit</strong> is a Common Lisp library that supports unit testing.
 There is a long history of testing packages in Lisp, usually called
@@ -29,13 +24,12 @@ been inspired by JUnit for Java. For more information on both unit testing and J
 <a name="overview"></a>
 <h1>Overview</h1>
 
-<p>My main goal for <strong>lisp-unit</strong> was to make it simple
-to use, particularly for beginning Lisp programmers. The advantages of 
-<strong>lisp-unit</strong> are:</p>
+<p>The main goal for <strong>lisp-unit</strong> was to make it simple
+to use. The advantages of <strong>lisp-unit</strong> are:</p>
 
 <ul>
 <li>Written in portable Common Lisp.</li>
-<li>Just one file to load.</li>
+<li>Loadable with ASDF.</li>
 <li>Dead-simple to define and run tests. See <a href="#example">example</a>.</li>
 <li>Supports redefining functions and even macros without reloading tests.</li>
 <li>Supports <a href="http://www.extremeprogramming.org/rules/testfirst.html">test-first programming</a>.</li>
@@ -47,12 +41,11 @@ to use, particularly for beginning Lisp programmers. The advantages of
 <h2>How to Use lisp-unit</h2>
 
 <ol>
-<li>Load (or compile and load) <a href="http://www.cs.northwestern.edu/academics/courses/325/programs/lisp-unit.lisp">lisp-unit.lisp</a>.</li>
+<li>Load (or compile and load) <code>(asdf:operate 'asdf:load-op :lisp-unit)</code>.</li>
 
-<li>Evaluate <code>(use-package :lisp-unit)</code>.</li>
+<li>Evaluate <code>(in-package :lisp-unit)</code>.</li>
 
-<li>Load a file of tests.  See below for how to define tests. Example:
-<a href="http://www.cs.northwestern.edu/academics/courses/325/programs/exercise-tests.lisp">exercise-tests.lisp</a>.</li>
+<li>Load a file of tests.  See below for how to define tests.</li>
 
 <li>Run the tests with <code>run-tests</code>.</li>
 </ol>
@@ -87,50 +80,50 @@ in the current package. To run just certain specific tests, use</p>
 <a name="example"></a>
 <p>The following example</p>
 <ul>
-<li>defines some tests to see if <code>pick-greater</code>
+<li>defines some tests to see if <code>my-max</code>
 returns the larger of two arguments</li>
-<li>defines a deliberately broken version of <code>pick-greater</code></li>
+<li>defines a deliberately broken version of <code>my-max</code></li>
 <li>runs the tests</li>
 </ul> 
 
 <p>First, we define some tests.</p>
 
-<pre>&gt; <b>(in-package :cs325-user)</b>
-#&lt;PACKAGE CS325-USER&gt;
-&gt; <b>(define-test pick-greater
-   (assert-equal 5 (pick-greater 2 5))
-   (assert-equal 5 (pick-greater 5 2))
-   (assert-equal 10 (pick-greater 10 10))
-   (assert-equal 0 (pick-greater -5 0))
+<pre>&gt; <b>(in-package :example)</b>
+#&lt;PACKAGE EXAMPLE&gt;
+&gt; <b>(define-test test-my-max
+   (assert-equal 5 (my-max 2 5))
+   (assert-equal 5 (my-max 5 2))
+   (assert-equal 10 (my-max 10 10))
+   (assert-equal 0 (my-max -5 0))
    )</b>
-PICK-GREATER
+TEST-MY-MAX
 </pre>
 
 <p>Following good test-first programming practice, we run these
 tests <b>before</b> writing any code.</p>
 
-<pre>&gt; <b>(run-tests pick-greater)</b>
-    PICK-GREATER: Undefined function PICK-GREATER called with arguments (2 5).
+<pre>&gt; <b>(run-tests test-my-max)</b>
+    TEST-MY-MAX: Undefined function MY-MAX called with arguments (2 5).
 </pre>
 
 <p>This shows that we need to do some work. So we define our
-broken version of <code>pick-greater</code>.</p>
+broken version of <code>my-max</code>.</p>
 
-<pre>&gt; <b>(defun pick-greater (x y) x)</b>  ;; <em>deliberately wrong</em>
-PICK-GREATER</pre>
+<pre>&gt; <b>(defun my-max (x y) x)</b>  ;; <em>deliberately wrong</em>
+MY-MAX</pre>
 
 <p>Now we run the tests again:</p>
 
-<pre>&gt; <b>(run-tests pick-greater)</b>
-PICK-GREATER: (PICK-GREATER 2 5) failed: Expected 5 but saw 2
-PICK-GREATER: (PICK-GREATER -5 0) failed: Expected 0 but saw -5
-PICK-GREATER: 2 assertions passed, 2 failed.</pre>
+<pre>&gt; <b>(run-tests my-max)</b>
+MY-MAX: (MY-MAX 2 5) failed: Expected 5 but saw 2
+MY-MAX: (MY-MAX -5 0) failed: Expected 0 but saw -5
+MY-MAX: 2 assertions passed, 2 failed.</pre>
 
 <p>This shows two failures. In both cases, the equality test
 returned NIL. In the first case it was because 
-<code>(pick-greater 2 5)</code> returned 2 when 5 was expected, and
+<code>(my-max 2 5)</code> returned 2 when 5 was expected, and
 in the second case, it was because 
-<code>(pick-greater -5 0)</code> returned -5 when 0 was expected.</p>
+<code>(my-max -5 0)</code> returned -5 when 0 was expected.</p>
 
 <a name="assertions"></a>
 <h2> Assertion Forms</h2>
@@ -407,7 +400,7 @@ can be used to specify an equality predicate. The default is <code>eql</code>.</
 
 <hr>
 
-<p id="closing">Comments? <img src="lisp-unit_files/comments.gif" align="bottom"> <a href="http://www.cs.northwestern.edu/%7Eriesbeck/">Send me email</a>.</p>
+<p id="closing"><a href="mailto:tmh.public@gmail.com">Comments or suggestions?</a></p>
 
 
 </body></html>
