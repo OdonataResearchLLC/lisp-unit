@@ -22,6 +22,11 @@
 	   #:number-equal #:assert-number-equal
 	   #:sigfig-equal #:assert-sigfig-equal
 	   #:array-equal #:assert-array-equal
-	   #:numerical-equal #:assert-numerical-equal))
+	   #:numerical-equal #:assert-numerical-equal
+	   ;; Floating point diagnostic functions
+	   #:float-error #:float-error-epsilon
+	   #:complex-error #:complex-error-epsilon
+	   #:number-error #:number-error-epsilon
+	   #:sequence-error #:array-error))
 
 (pushnew :lisp-unit common-lisp:*features*)
