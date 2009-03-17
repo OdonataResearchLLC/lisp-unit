@@ -1,0 +1,37 @@
+LISP-UNIT TODO
+
+2009-03-16
+
+(1) Update the documentation to reflect the floating point extensions
+to the library. I've already updated some of the documentation, I just
+need to crank this one out some night.
+
+(2) Better integrate the numeric diagnostic functions with the numeric
+assertions. Currently, the VALUE and FORM argument of the assertion
+must be repeated as arguments to the diagnostic function. The intent
+is that you simply note the diagnostic function that you wish to apply
+to the test in the event of a failure and the VALUE and FORM arguments
+are automagically passed to that function.
+
+(3) Improve the test report. Initially, it would be useful to only
+specifically report the failures and otherwise just report the overall
+summary. Other improvements might be some sort of progress indication,
+like 'PPPPFPPPFFFP.......' where P is pass, F is fail and (.) is not
+performed yet. Ideas here are welcome.
+
+(4) Interactive correction of tests. Something along the lines of the
+debugger, maybe actually using the debugger. I envision a work-flow
+scenario where you run all of the tests and see X of Y tests
+failed. Now you enter a form like
+
+  CL-USER> (lisp-unit:run-failed-tests :interactive t)
+
+where the default for interactive is nil. Actually, this approach
+could also satisfy the reporting requirements. Anyway, the first
+failed test is executed reporting the results and you are provided a
+prompt with some options. The options could be along the lines of
+abort the testing, pick a diagnostic function to execute or re-run the
+test. If the re-run the test option is chosen, it should be after
+modifications to the definition of the test or the routine being
+tested are made. The idea for this interactive correction feature is
+to tighten the debug loop. Input on this idea is highly welcome.
