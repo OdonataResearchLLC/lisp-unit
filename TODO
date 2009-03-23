@@ -6,20 +6,27 @@ LISP-UNIT TODO
 to the library. I've already updated some of the documentation, I just
 need to crank this one out some night.
 
-(2) Better integrate the numeric diagnostic functions with the numeric
+(2) Add unit testing for lisp-unit. I think the approach should be to
+note some functions and macros as identities that have be verified or
+are logically correct. All tests of lisp-unit should then be defined
+in terms of the identity functions. Maybe a core set of functionality
+should be verified using standard CL comparisons such as eq, eql, =,
+etc.
+
+(3) Better integrate the numeric diagnostic functions with the numeric
 assertions. Currently, the VALUE and FORM argument of the assertion
 must be repeated as arguments to the diagnostic function. The intent
 is that you simply note the diagnostic function that you wish to apply
 to the test in the event of a failure and the VALUE and FORM arguments
 are automagically passed to that function.
 
-(3) Improve the test report. Initially, it would be useful to only
+(4) Improve the test report. Initially, it would be useful to only
 specifically report the failures and otherwise just report the overall
 summary. Other improvements might be some sort of progress indication,
 like 'PPPPFPPPFFFP.......' where P is pass, F is fail and (.) is not
 performed yet. Ideas here are welcome.
 
-(4) Interactive correction of tests. Something along the lines of the
+(5) Interactive correction of tests. Something along the lines of the
 debugger, maybe actually using the debugger. I envision a work-flow
 scenario where you run all of the tests and see X of Y tests
 failed. Now you enter a form like
