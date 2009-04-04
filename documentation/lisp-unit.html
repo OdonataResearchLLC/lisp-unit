@@ -1,79 +1,99 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head>
-<meta http-equiv="content-type" content="text/html; charset=UTF-8">
-   <title>LISP-UNIT</title>
-<link href="lisp-unit.css" rel="stylesheet" type="text/css">
-</head><body>
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+                      "http://www.w3.org/TR/html4/loose.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8"></meta>
+  <title>LISP-UNIT</title>
+  <link href="lisp-unit.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
 
 <div id="banner">LISP-UNIT</div>
 
-<p><strong>lisp-unit</strong> is a Common Lisp library that supports
-unit testing. It is an extension of the
-<a href="http://www.cs.northwestern.edu/academics/courses/325/readings/lisp-unit.html">
-library written by Chris Riesbeck</a>. There is a long history of testing
-packages in Lisp, usually called "regression" testers. More recent
-packages in Lisp and other languages have been inspired by JUnit for
-Java. For more information on both unit testing and JUnit, visit <a
-href="http://www.junit.org/" target="_blank">www.junit.org</a>.</p>
+<p>
+  <strong>lisp-unit</strong> is a Common Lisp library that supports
+  unit testing. It is an extension of the
+  <a href="http://www.cs.northwestern.edu/academics/courses/325/readings/lisp-unit.html">
+  library written by Chris Riesbeck </a>. There is a long history of
+  testing packages in Lisp, usually called "regression" testers. More
+  recent packages in Lisp and other languages have been inspired by
+  JUnit for Java. For more information on both unit testing and JUnit,
+  visit <a href="http://www.junit.org/" target="_blank">www.junit.org</a>.
+</p>
 
 <p>This page has two parts:</p>
 
 <ul>
-<li><a href="#overview">An overview with examples</a></li>
-<li><a href="#reference">A reference section with all forms and functions</a></li>
+  <li><a href="#overview">An overview with examples</a></li>
+  <li><a href="#reference">A reference section with all forms and functions</a></li>
 </ul>
 
 <a name="overview"></a>
 <h1>Overview</h1>
 
-<p>The main goal for <strong>lisp-unit</strong> was to make it simple
-to use. The advantages of <strong>lisp-unit</strong> are:</p>
+<p>
+  The main goal for <strong>lisp-unit</strong> was to make it simple
+  to use. The advantages of <strong>lisp-unit</strong> are:
+</p>
 
 <ul>
-<li>Written in portable Common Lisp.</li>
-<li>Loadable with ASDF.</li>
-<li>Dead-simple to define and run tests. See <a href="#example">example</a>.</li>
-<li>Supports redefining functions and even macros without reloading tests.</li>
-<li>Supports <a href="http://www.extremeprogramming.org/rules/testfirst.html">test-first programming</a>.</li>
-<li>Supports testing return values, printed output, macro expansions, and error conditions.</li>
-<li>Produces short readable output with a reasonable level of detail.</li>
-<li>Groups tests by package for modularity.</li>
+  <li>Written in portable Common Lisp.</li>
+  <li>Loadable with ASDF.</li>
+  <li>Dead-simple to define and run tests. See <a href="#example">example</a>.</li>
+  <li>Supports redefining functions and even macros without reloading tests.</li>
+  <li>Supports <a href="http://www.extremeprogramming.org/rules/testfirst.html">
+      test-first programming</a>.</li>
+  <li>Supports testing return values, printed output, macro
+      expansions, and error conditions.</li>
+  <li>Produces short readable output with a reasonable level of detail.</li>
+  <li>Groups tests by package for modularity.</li>
 </ul>
 
 <h2>How to Use lisp-unit</h2>
 
 <ol>
-<li>Load (or compile and load) <code>(asdf:operate 'asdf:load-op :lisp-unit)</code>.</li>
-
-<li>Evaluate <code>(in-package :lisp-unit)</code>.</li>
-
-<li>Load a file of tests.  See below for how to define tests.</li>
-
-<li>Run the tests with <code>run-tests</code>.</li>
+  <li>Load (or compile and load) <code>(asdf:operate 'asdf:load-op :lisp-unit)</code>.</li>
+  <li>Evaluate <code>(in-package :lisp-unit)</code>.</li>
+  <li>Load a file of tests.  See below for how to define tests.</li>
+  <li>Run the tests with <code>run-tests</code>.</li>
 </ol>
 
-<p>Any test failures will be printed, along with a summary of how many tests were
-run, how many passed, and how many failed.</p>
+<p>
+  Any test failures will be printed, along with a summary of how many
+  tests were run, how many passed, and how many failed.
+</p>
 
 <p>You define a test with <code>define-test</code>:</p>
 
 <pre class="code-syntax">(define-test <em>name exp<sub>1</sub> exp<sub>2</sub></em> ...)</pre>
 
-<p>This defines a test called <em>name</em>. The expressions can be anything, 
-but typically most will be 
-<a href="#assertions">assertion forms</a>.</p>
+<p>
+  This defines a test called <em>name</em>. The expressions can be
+  anything, but typically most will be <a href="#assertions">
+  assertion forms</a>.
+</p>
 
-<p>Tests can be defined before the code they test, even if they're testing
-macros. This is to support 
-<a href="http://www.extremeprogramming.org/rules/testfirst.html">test-first programming</a>.</p>
+<p>
+  Tests can be defined before the code they test, even if they're
+  testing macros. This is to support
+  <a href="http://www.extremeprogramming.org/rules/testfirst.html">
+  test-first programming</a>.
+</p>
 
-<p>After defining your tests and the code they test, run
-the tests with</p>
+<p>
+  After defining your tests and the code they test, run the tests with
+</p>
 
 <pre>(run-tests)</pre>
 
-<p>This runs every test defined
-in the current package. To run just certain specific tests, use</p>
+<p>
+  This runs every test defined in the current package. To run just
+  certain specific tests, use
+</p>
 
 <pre class="code-syntax">(run-tests <em>name<sub>1</sub> name<sub>2</sub></em> ...)</pre>
 
@@ -82,66 +102,78 @@ in the current package. To run just certain specific tests, use</p>
 <a name="example"></a>
 <p>The following example</p>
 <ul>
-<li>defines some tests to see if <code>my-max</code>
-returns the larger of two arguments</li>
-<li>defines a deliberately broken version of <code>my-max</code></li>
-<li>runs the tests</li>
+  <li>defines some tests to see if <code>my-max</code> returns the
+      larger of two arguments</li>
+  <li>defines a deliberately broken version of <code>my-max</code></li>
+  <li>runs the tests</li>
 </ul> 
 
 <p>First, we define some tests.</p>
 
-<pre>&gt; <b>(in-package :example)</b>
+<pre>
+&gt; <b>(in-package :example)</b>
 #&lt;PACKAGE EXAMPLE&gt;
 &gt; <b>(define-test test-my-max
    (assert-equal 5 (my-max 2 5))
    (assert-equal 5 (my-max 5 2))
    (assert-equal 10 (my-max 10 10))
-   (assert-equal 0 (my-max -5 0))
-   )</b>
+   (assert-equal 0 (my-max -5 0)))</b>
 TEST-MY-MAX
 </pre>
 
-<p>Following good test-first programming practice, we run these
-tests <b>before</b> writing any code.</p>
+<p>
+  Following good test-first programming practice, we run these tests
+  <b>before</b> writing any code.
+</p>
 
-<pre>&gt; <b>(run-tests test-my-max)</b>
-    TEST-MY-MAX: Undefined function MY-MAX called with arguments (2 5).
+<pre>
+&gt; <b>(run-tests test-my-max)</b>
+TEST-MY-MAX: Undefined function MY-MAX called with arguments (2 5).
 </pre>
 
-<p>This shows that we need to do some work. So we define our
-broken version of <code>my-max</code>.</p>
+<p>
+  This shows that we need to do some work. So we define our broken
+  version of <code>my-max</code>.
+</p>
 
-<pre>&gt; <b>(defun my-max (x y) x)</b>  ;; <em>deliberately wrong</em>
-MY-MAX</pre>
+<pre>
+&gt; <b>(defun my-max (x y) x)</b>  ;; <em>deliberately wrong</em>
+MY-MAX
+</pre>
 
 <p>Now we run the tests again:</p>
 
-<pre>&gt; <b>(run-tests my-max)</b>
+<pre>
+&gt; <b>(run-tests my-max)</b>
 MY-MAX: (MY-MAX 2 5) failed: Expected 5 but saw 2
 MY-MAX: (MY-MAX -5 0) failed: Expected 0 but saw -5
-MY-MAX: 2 assertions passed, 2 failed.</pre>
+MY-MAX: 2 assertions passed, 2 failed.
+</pre>
 
-<p>This shows two failures. In both cases, the equality test
-returned NIL. In the first case it was because 
-<code>(my-max 2 5)</code> returned 2 when 5 was expected, and
-in the second case, it was because 
-<code>(my-max -5 0)</code> returned -5 when 0 was expected.</p>
+<p>
+  This shows two failures. In both cases, the equality test returned
+  NIL. In the first case it was because <code>(my-max 2 5)</code>
+  returned 2 when 5 was expected, and in the second case, it was
+  because <code>(my-max -5 0)</code> returned -5 when 0 was expected.
+</p>
 
 <a name="assertions"></a>
-<h2> Assertion Forms</h2>
+<h2>Assertion Forms</h2>
 
 <p>The most commonly used assertion form is </p>
 
 <pre class="code-syntax">(assert-equal <em>value form</em>)</pre>
 
-<p>This tallies a failure if <em>form</em> returns a value
-not <code>equal</code> to <em>value</em>. Both
-<em>value</em> and <em>test</em> are
-evaluated in the local lexical environment. This means
-that you can use local variables in tests. In particular,
-you can write loops that run many tests at once:</p>
+<p>
+  This tallies a failure if <em>form</em> returns a value not
+  <code>equal</code> to <em>value</em>. Both <em>value</em> and
+  <em>test</em> are evaluated in the local lexical environment. This
+  means that you can use local variables in tests. In particular, you
+  can write loops that run many tests at once:
+</p>
 
-<pre>&gt; <b>(define-test my-sqrt
+<pre>
+&gt; <b>(define-test my-sqrt
   (dotimes (i 5)
     (assert-equal i (my-sqrt (* i i)))))</b>
 MY-SQRT
@@ -152,14 +184,18 @@ MY-SQRT
 MY-SQRT: (MY-SQRT (* I I)) failed: Expected 1 but saw 1/2
 MY-SQRT: (MY-SQRT (* I I)) failed: Expected 3 but saw 9/2
 MY-SQRT: (MY-SQRT (* I I)) failed: Expected 4 but saw 8
-MY-SQRT: 2 assertions passed, 3 failed.</pre>
+MY-SQRT: 2 assertions passed, 3 failed.
+</pre>
 
-<p>However, the above output doesn't tell us for which values of <code>i</code> 
-the code failed. Fortunately, you can fix this by
-adding expressions at the end of the <code>assert-equal</code>.
-These expression and their values will be printed on failure.</p>
+<p>
+  However, the above output doesn't tell us for which values of
+  <code>i</code> the code failed. Fortunately, you can fix this by
+  adding expressions at the end of the <code>assert-equal</code>.
+  These expression and their values will be printed on failure.
+</p>
 
-<pre>&gt; <b>(define-test my-sqrt
+<pre>
+&gt; <b>(define-test my-sqrt
   (dotimes (i 5)
     (assert-equal i (my-sqrt (* i i)) i)))</b>  <em>;; added i at the end</em>
 MY-SQRT
@@ -170,52 +206,64 @@ MY-SQRT: (MY-SQRT (* I I)) failed: Expected 3 but saw 9/2
    I =&gt; 3
 MY-SQRT: (MY-SQRT (* I I)) failed: Expected 4 but saw 8
    I =&gt; 4
-MY-SQRT: 2 assertions passed, 3 failed.</pre>
+MY-SQRT: 2 assertions passed, 3 failed.
+</pre>
 
 <p>The next most useful assertion form is</p>
 
 <pre class="code-syntax">(assert-true <em>test</em>)</pre>
 
-<p>This tallies a failure if <em>test</em> returns false. Again,
-if you need to print out extra information, just add expressions
-after <em>test</em>.</p>
+<p>
+  This tallies a failure if <em>test</em> returns false. Again, if you
+  need to print out extra information, just add expressions after
+  <em>test</em>.
+</p>
 
-<p>There are also assertion forms to test
-what code prints, what errors code returns, or what
-a macro expands into.
-A complete list of assertion forms is in 
-<a href="#ref-assertion">the reference section</a>.</p>
+<p>
+  There are also assertion forms to test what code prints, what errors
+  code returns, or what a macro expands into.  A complete list of
+  assertion forms is in <a href="#ref-assertion">the reference
+  section</a>.
+</p>
 
-<p class="quote">Do not confuse <code>assert-true</code>
-with Common Lisp's <code>assert</code> macro. <code>assert</code>
-is used in code to guarantee that some condition is true. If it isn't,
-the code halts. <code>assert</code> has options you can use
-to let a user fix what's wrong and resume execution. A similar collision
-of names exists in JUnit and Java.</p>
-
+<p class="quote">
+  Do not confuse <code>assert-true</code> with Common Lisp's
+  <code>assert</code> macro. <code>assert</code> is used in code to
+  guarantee that some condition is true. If it isn't, the code
+  halts. <code>assert</code> has options you can use to let a user fix
+  what's wrong and resume execution. A similar collision of names
+  exists in JUnit and Java.
+</p>
 
 <h2>How to Organize Tests with Packages</h2>
 
-<p>Tests are grouped internally by the current package, 
-so that a set of tests can be defined for one package
-of code without interfering with tests for other packages.</p>
+<p>
+  Tests are grouped internally by the current package, so that a set
+  of tests can be defined for one package of code without interfering
+  with tests for other packages.
+</p>
 
-<p>If your code is being defined in <code>cl-user</code>, 
-which is common when learning Common Lisp, but not for
-production-level code, then you should define your tests
-in <code>cl-user</code> as well.</p>
+<p>
+  If your code is being defined in <code>cl-user</code>, which is
+  common when learning Common Lisp, but not for production-level code,
+  then you should define your tests in <code>cl-user</code> as well.
+</p>
 
-<p>If your code is being defined in its own package,
-you should define your tests either in that same package,
-or in another package for test code. The latter
-approach has the advantage of making sure that your
-tests have access to only the exported symbols of your
-code package.</p>
+<p>
+  If your code is being defined in its own package, you should define
+  your tests either in that same package, or in another package for
+  test code. The latter approach has the advantage of making sure that
+  your tests have access to only the exported symbols of your code
+  package.
+</p>
 
-<p>For example, if you were defining a date package,
-your <code>date.lisp</code> file would look like this:</p>
+<p>
+  For example, if you were defining a date package, your
+  <code>date.lisp</code> file would look like this:
+</p>
 
-<blockquote><pre>(defpackage :date
+<blockquote><pre>
+(defpackage :date
   (:use :common-lisp)
   (:export #:date-&gt;string #:string-&gt;date))
   
@@ -227,7 +275,8 @@ your <code>date.lisp</code> file would look like this:</p>
 
 <p>Your <code>date-tests.lisp</code> file would look like this:</p>
 
-<blockquote><pre>(defpackage :date-tests
+<blockquote><pre>
+(defpackage :date-tests
   (:use :common-lisp :lisp-unit :date))
 
 (in-package :date-tests)
@@ -238,171 +287,473 @@ your <code>date.lisp</code> file would look like this:</p>
 ...
 </pre></blockquote>
 
+<p>You could then run all your date tests in the test package:</p>
 
-<p>You could then run all your date tests in
-the test package:</p>
-
-<blockquote><pre>(in-package :date-tests)
+<blockquote><pre>
+(in-package :date-tests)
 
 (run-tests)
 </pre></blockquote>
 
-<p>Alternately, you could run all your date tests from any package
-with:</p>
+<p>
+  Alternately, you could run all your date tests from any package
+  with:
+</p>
 
 <blockquote><pre>(lisp-unit:run-all-tests :date-tests)</pre></blockquote>
-
 
 <a name="reference"></a>
 <h1>Reference Section</h1>
 
-<p>Here is a list of the functions and macros
-exported by <strong>lisp-unit</strong>.</p>
+<p>
+  Here is a list of the functions and macros exported by
+  <strong>lisp-unit</strong>.
+</p>
 
 <a name="ref-tests"></a>
 <h3>Functions for managing tests</h3>
 
 <dl>
-<dt class="code-syntax">(define-test <em>name exp<sub>1</sub> exp<sub>2</sub></em> ...)</dt>
+  <dt class="code-syntax">
+    (define-test <em>name exp<sub>1</sub> exp<sub>2</sub></em> ...)
+  </dt>
+  <dd>
+    This macro defines a test called <em>name</em> with the
+    expressions specified, in the package specified by the value of
+    <code>*package*</code> in effect when <code>define-test</code> is
+    <u>executed</u>.  The expresssions are assembled into runnable
+    code whenever needed by <code>run-tests</code>. Hence you can
+    define or redefine macros without reloading tests using those
+    macros.
+  </dd>
 
-<dd>This macro defines a test called <em>name</em> with the expressions
-specified, in the package specified by 
-the value of <code>*package*</code>
-in effect when <code>define-test</code> is <u>executed</u>.
-The expresssions are assembled into runnable code whenever 
-needed by <code>run-tests</code>. Hence you can define or
-redefine macros without reloading tests using those macros.
-</dd>
+  <dt class="code-syntax">
+    (get-tests [<em>package</em>)
+  </dt>
+  <dd>
+    This function returns the names of all the tests that have been
+    defined for the <em>package</em>. If no package is given, the
+    value of <code>*package*</code> is used.
+  </dd>
 
-<dt class="code-syntax">(get-tests [<em>package</em>)</dt>
-<dd>This function returns the names of all
-the tests that have been defined for the <em>package</em>. If no package
-is given, the value of <code>*package*</code> is used.</dd>
-  
-<dt class="code-syntax">(get-test-code <em>name</em> [<em>package</em>)</dt>
-<dd>This function returns the body of the code stored for the test
-<em>name</em> under <em>package</em>. If no package
-is given, the value of <code>*package*</code> is used.</dd>
-  
-<dt class="code-syntax">(remove-tests <em>names</em> [<em>package</em>])</dt>
-<dd>This function removes the tests named for the given package.
-If no package
-is given, the value of <code>*package*</code> is used.</dd>
-  
-<dt class="code-syntax">(remove-all-tests [<em>package</em>])</dt>
-<dd>This function removes the tests for the given package.
-If no package is given, it removes all tests for the current package.
-If <code>nil</code> is given, it removes all tests for all packages.</dd>
+  <dt class="code-syntax">
+    (get-test-code <em>name</em> [<em>package</em>)
+  </dt>
+  <dd>
+    This function returns the body of the code stored for the test
+    <em>name</em> under <em>package</em>. If no package is given, the
+    value of <code>*package*</code> is used.
+  </dd>
 
-<dt class="code-syntax">(run-all-tests <em>package</em>)</dt>
-<dd>This macro runs all the tests defined in the specified package
-and reports the results.</dd>
+  <dt class="code-syntax">
+    (remove-tests <em>names</em> [<em>package</em>])
+  </dt>
+  <dd>
+    This function removes the tests named for the given package. If no
+    package is given, the value of <code>*package*</code> is used.
+  </dd>
 
-<dt class="code-syntax">(run-tests <em>name<sub>1</sub> name<sub>2</sub></em> ...)</dt>
-<dd>This macro runs the tests named and reports the results. 
-The package used is the value of <code>*package*</code>
-in effect when the macro is <u>expanded</u>. If no names are given,
-all tests for that package are run.</dd>
+  <dt class="code-syntax">
+    (remove-all-tests [<em>package</em>])
+  </dt>
+  <dd>
+    This function removes the tests for the given package.  If no
+    package is given, it removes all tests for the current package.
+    If <code>nil</code> is given, it removes all tests for all
+    packages.
+  </dd>
 
-<dt class="code-syntax">(use-debugger [<em>flag</em>])</dt>
-<dd>By default, errors that occur while running tests are simply
-counted and ignored. You can change this behavior by calling <tt>use-debugger</tt>
-with one of three possible flag values: <tt>t</tt> (the default) means
-your Lisp's normal error handling routines will be invoked when
-errors occur; <tt>:ask</tt> means you will be asked what to do
-when an error occurs, and <tt>nil</tt> means errors are counted and
-ignored, i.e., the standard behavior.</dd>
+  <dt class="code-syntax">
+    (run-all-tests <em>package</em>)
+  </dt>
+  <dd>
+    This macro runs all the tests defined in the specified package and
+    reports the results.
+  </dd>
 
+  <dt class="code-syntax">
+    (run-tests <em>name<sub>1</sub> name<sub>2</sub></em> ...)
+  </dt>
+  <dd>
+    This macro runs the tests named and reports the results.  The
+    package used is the value of <code>*package*</code> in effect when
+    the macro is <u>expanded</u>. If no names are given, all tests for
+    that package are run.
+  </dd>
+
+  <dt class="code-syntax">
+    (use-debugger [<em>flag</em>])
+  </dt>
+  <dd>
+    By default, errors that occur while running tests are simply
+    counted and ignored. You can change this behavior by calling
+    <tt>use-debugger</tt> with one of three possible flag values:
+    <tt>t</tt> (the default) means your Lisp's normal error handling
+    routines will be invoked when errors occur; <tt>:ask</tt> means
+    you will be asked what to do when an error occurs, and
+    <tt>nil</tt> means errors are counted and ignored, i.e., the
+    standard behavior.
+  </dd>
 </dl>
 
 <a name="ref-assertion"></a>
 <h3>Forms for assertions</h3>
 
-<p>All of the assertion forms are macros.
-They tally a failure if the associated predication
-returns false. Assertions can be made about
-return values, printed output, macro expansions, and even
-expected errors. Assertion form arguments are evaluated 
-in the local lexical environment.</p>
+<p>
+  All of the assertion forms are macros.  They tally a failure if the
+  associated predication returns false. Assertions can be made about
+  return values, printed output, macro expansions, and even expected
+  errors. Assertion form arguments are evaluated in the local lexical
+  environment.
+</p>
 
-<p>All assertion forms
-allow you to include additional expressions at the end of the form. These
-expressions and their values will
-be printed only when the test fails.</p>
+<p>
+  All assertion forms allow you to include additional expressions at
+  the end of the form. These expressions and their values will be
+  printed only when the test fails.
+</p>
 
 <p>Return values are unspecified for all assertion forms.</p>
 
 <dl>
+  <dt class="code-syntax">
+    (assert-eq <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dt class="code-syntax">
+    (assert-eql <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dt class="code-syntax">
+    (assert-equal <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dt class="code-syntax">
+    (assert-equalp <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dt class="code-syntax">
+    (assert-equality <em>predicate</em> <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    These macros tally a failure if <em>value</em> is not equal to the
+    result returned by <em>form</em>, using the specified equality
+    predicate. In general, <code>assert-equal</code> is used for most
+    tests.  Example use of <code>assert-equality</code>:
+    <pre style="margin-left: 2%;">
+      (assert-equality #'set-equal '(a b c) (unique-atoms '((b c) a ((b a) c))))
+    </pre>
+  </dd>
 
-<dt class="code-syntax"> (assert-eq <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dt class="code-syntax"> (assert-eql <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dt class="code-syntax"> (assert-equal <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dt class="code-syntax"> (assert-equalp <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dt class="code-syntax"> (assert-equality <em>predicate</em> <em>value</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dd>These macros tally a failure if <em>value</em> is not equal to
-the result returned by <em>form</em>, using the specified equality predicate. 
-<br> 
-In general, <code>assert-equal</code>
-is used for most tests.<br>
-Example use of <code>assert-equality</code>:
-<pre style="margin-left: 2%;">(assert-equality #'set-equal '(a b c) (unique-atoms '((b c) a ((b a) c))))</pre>
-</dd>
+  <dt class="code-syntax">
+    (assert-true <em>test</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dt class="code-syntax">
+    (assert-false <em>test</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    <code>assert-true</code> tallies a failure if <em>test</em>
+    returns false.  <code>assert-false</code> tallies a failure if
+    <em>test</em> returns true.
+  </dd>
 
-<dt class="code-syntax">(assert-true <em>test</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dt class="code-syntax">(assert-false <em>test</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dd><code>assert-true</code>
-tallies a failure if <em>test</em> returns false.
-<code>assert-false</code>
-tallies a failure if <em>test</em> returns true.<br>
-</dd>
+  <dt class="code-syntax">
+    (assert-prints "<em>output</em>" <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    This macro tallies a failure if form does not print to standard
+    output stream output equal to the given string, ignoring
+    differences in beginning and ending newlines.
+  </dd>
 
-<dt class="code-syntax"> (assert-prints "<em>output</em>" <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dd>This macro tallies a failure if form does not print to standard output stream
-output equal to the 
-given string, ignoring differences in beginning and ending newlines.</dd>
+  <dt class="code-syntax">
+    (assert-expands <em>expansion</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    This macro tallies a failure if <code>(macroexpand-1
+    <em>form</em>)</code> does not produce a value equal to
+    <em>expansion</em>.
+  </dd>
 
-<dt class="code-syntax"> (assert-expands <em>expansion</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dd>This macro tallies a failure if <code>(macroexpand-1 <em>form</em>)</code>
-does not produce a value equal to <em>expansion</em>. 
-</dd>
+  <dt class="code-syntax">
+    (assert-error <em>condition-type</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    This macro tallies a failure if <em>form</em> does not signal an
+    error that is equal to or a subtype of
+    <em>condition-type</em>. Use <code>error</code> to refer to any
+    kind of error. See <a
+    href="http://www.lisp.org/HyperSpec/Body/sec_9-1-1.html">condition
+    types in the Common Lisp Hyperspec</a> for other possible
+    names. For example,
 
-<dt class="code-syntax">(assert-error <em>condition-type</em> <em>form</em> [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])</dt>
-<dd>This macro tallies a failure if <em>form</em> does not
-signal an error that
-is equal to or a subtype of <em>condition-type</em>. Use <code>error</code>
-to refer to any kind of error. See 
-<a href="http://www.lisp.org/HyperSpec/Body/sec_9-1-1.html">condition 
-types in the Common Lisp Hyperspec</a> for other possible names. For example,
+    <pre>(assert-error 'arithmetic-error (foo 0))</pre> 
 
-<pre>(assert-error 'arithmetic-error (foo 0))</pre> 
-
-would assert that <code>foo</code>
-is supposed to signal an arithmetic error when passed zero.</dd>
+    would assert that <code>foo</code> is supposed to signal an
+    arithmetic error when passed zero.
+  </dd>
 </dl>
-
 
 <a name="ref-predicates"></a>
 <h3>Utility predicates</h3>
 
-<p>Several predicate functions are exported that are often useful in
-writing tests with <code>assert-equality</code>.</p>
+<p>
+  Several predicate functions are exported that are often useful in
+  writing tests with <code>assert-equality</code>.
+</p>
 
 <dl>
-<dt class="code-syntax">(logically-equal <em>value</em><sub>1</sub> <em>value</em><sub>2</sub>)</dt>
-<dd>This predicate returns true of the two values are either
-both true, i.e., non-NIL, or both false.</dd>
+  <dt class="code-syntax">
+    (logically-equal <em>value</em><sub>1</sub> <em>value</em><sub>2</sub>)
+  </dt>
+  <dd>
+    This predicate returns true of the two values are either both
+    true, i.e., non-NIL, or both false.
+  </dd>
 
-<dt class="code-syntax">(set-equal <em>list</em><sub>1</sub> <em>list</em><sub>2</sub> [:test])</dt>
-<dd>This predicate returns true the first list is a subset of the 
-second and vice versa. <code>:test</code>
-can be used to specify an equality predicate. The default is <code>eql</code>.</dd>
+  <dt class="code-syntax">
+    (set-equal <em>list</em><sub>1</sub> <em>list</em><sub>2</sub> [:test])
+  </dt>
+  <dd>
+    This predicate returns true the first list is a subset of the
+    second and vice versa. <code>:test</code> can be used to specify
+    an equality predicate. The default is <code>eql</code>.
+  </dd>
+</dl>
 
+<h3>Floating point predicates and tests</h3>
+
+<p>
+  The original list unit has been extended with several floating point
+  predicate functions and tests. The predicates can be used with
+  <code>assert-equality</code> or the corresponding tests can be
+  directly applied. All of the floating point comparisons are
+  considered equal if the relative error between the values is less
+  than some epsilon. The internal default value of
+  <code>epsilon</code> is is twice the appropriate float epsilon
+  (i.e. <code>2*single-float-epsilon</code> or
+  <code>2*double-float-epsilon</code>). Epsilon can be controlled at a
+  lexical level using the package variable <code>*epsilon*</code>. If
+  <code>*epsilon*</code> is set to <code>nil</code>, the internal
+  epsilon values are used. This is the default value of
+  <code>epsilon</code>.
+</p>
+
+<dl>
+  <dt class="code-syntax">
+    (float-equal <em>float</em><sub>1</sub> <em>float</em><sub>2</sub> [epsilon])
+  </dt>
+  <dt class="code-syntax">
+    (assert-float-equal <em>value</em> <em>form</em>
+     [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    Return true if the relative error between
+    <code>float<sub>1</sub></code> and <code>float<sub>2</sub></code>
+    is less than <code>epsilon</code>. The test tallies the failure if
+    <code>value</code> is not equal to the result returned from
+    <code>form</code>, using <code>float-equal</code>.
+  </dd>
+
+  <dt class="code-syntax">
+    (complex-equal <em>complex</em><sub>1</sub> <em>complex</em><sub>2</sub> [epsilon])
+  </dt>
+  <dt class="code-syntax">
+    (assert-complex-equal <em>value</em> <em>form</em>
+     [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    Return true if the relative error between
+    Real(<code>complex<sub>1</sub></code>),
+    Real(<code>complex<sub>2</sub></code>) and
+    Imaginary(<code>complex<sub>1</sub></code>),
+    Imaginary(<code>complex<sub>2</sub></code>) are each less than
+    <code>epsilon</code>. The test tallies the failure if
+    <code>value</code> is not equal to the result returned from
+    <code>form</code>, using <code>complex-equal</code>.
+  </dd>
+  <dt class="code-syntax">
+    (number-equal <em>number</em><sub>1</sub> <em>number</em><sub>2</sub> [epsilon])
+  </dt>
+  
+  <dt class="code-syntax">
+    (assert-number-equal <em>value</em> <em>form</em>
+     [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    Return true if the error between <code>number<sub>1</sub></code>
+    and <code>number<sub>2</sub></code> is less than
+    <code>epsilon</code> for floating point numbers. If the numbers
+    are integers, return true if the numbers are equal.  The test
+    tallies the failure if <code>value</code> is not equal to the
+    result returned from <code>form</code>, using
+    <code>number-equal</code>.
+  </dd>
+
+  <dt class="code-syntax">
+    (sigfig-equal <em>float</em><sub>1</sub> <em>float</em><sub>2</sub> [significant-figures])
+  </dt>
+  <dt class="code-syntax">
+    (assert-sigfig-equal <em>value</em> <em>form</em>
+    [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    Return true if <code>float<sub>1</sub></code> and
+    <code>float<sub>2</sub></code> are equal to the specified
+    <code>significant-figures</code>. The default value of significant
+    figures is 4, set by the global variable
+    <code>*significant-figures</code>.  The test tallies the failure
+    if <code>value</code> is not equal to the result returned from
+    <code>form</code>, using <code>sigfig-equal</code>.
+  </dd>
+
+  <dt class="code-syntax">
+    (array-equal <em>array</em><sub>1</sub> <em>array</em><sub>2</sub> [:test])
+  </dt>
+  <dt class="code-syntax">
+    (assert-array-equal <em>test</em> <em>value</em> <em>form</em>
+    [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    Return true if each element of <code>array<sub>1</sub></code> and
+    <code>array<sub>2</sub></code> is equal according to
+    <code>:test</code> which defaults to <code>number-equal</code>.
+    The test tallies the failure if <code>value</code> is not equal to
+    the result returned from <code>form</code>, using
+    <code>numerical-equal</code>. In general, <code>test</code> must
+    be a function that accepts 2 arguments and returns <em>true</em>
+    or <em>false</em>.
+  </dd>
+
+  <dt class="code-syntax">
+    (numerical-equal <em>result</em><sub>1</sub> <em>result</em><sub>2</sub> [:test])
+  </dt>
+  <dt class="code-syntax">
+    (assert-numerical-equal <em>value</em> <em>form</em>
+    [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    Return true if the numerical <code>result<sub>1</sub></code> is
+    equal to <code>result<sub>2</sub></code> as defined by
+    <code>:test</code>. The results can be numbers, sequences, nested
+    sequences and arrays.  The test tallies the failure if
+    <code>value</code> is not equal to the result returned from
+    <code>form</code>, using <code>numerical-equal</code>. In general,
+    <code>test</code> must be a function that accepts 2 arguments and
+    returns <em>true</em> or <em>false</em>.
+  </dd>
+</dl>
+
+<a name="ref-diagnostic"></a>
+<h3>Floating point diagnostic functions</h3>
+
+<p>
+  Failing a unit test is only half of the problem. The other half is
+  understanding why the test failed and what is required to fix
+  it. The default values of <em>epsilon</em> will only be applicable
+  in a few situations. In many situations, the acceptable value of
+  <em>epsilon</em> is dependent on the routine being examined. When
+  testing large sequences or arrays, it is not enough to know that
+  each element is not equal. It is usually necessary to know which
+  specific elements are not equal. The functions presented in this
+  section facilitate diagnosis test failures for floating point
+  numbers, sequences and arrays. For tests that compare the relative
+  error against epsilon, the value of epsilon can be controlled by
+  setting <code>*epsilon*</code>. Similarly, if
+  <code>sigfig-equal</code> is used as the test, the number of
+  significant figures can be set by setting
+  <code>*significant-figures*</code>.
+</p>
+
+<dl>
+  <dt class="code-syntax">
+    (float-error <em>float</em><sub>1</sub> <em>float</em><sub>2</sub>)
+  </dt>
+  <dd>
+    Return the relative error between <code>float<sub>1</sub></code>
+    and <code>float<sub>2</sub></code>.
+  </dd>
+
+  <dt class="code-syntax">
+    (float-error-epsilon <em>float</em><sub>1</sub> <em>float</em><sub>2</sub> [epsilon])
+  </dt>
+  <dd>
+    Return the error expressed as a multiple of epsilon.
+    <em>(relative error)/epsilon</em>
+  </dd>
+
+  <dt class="code-syntax">
+    (complex-epsilon <em>complex</em><sub>1</sub> <em>complex</em><sub>2</sub>)
+  </dt>
+  <dd>
+    Return a complex value with each component equal to the relative
+    error between the components of <code>complex<sub>1</sub></code>
+    and <code>complex<sub>2</sub></code>, respectively.
+  </dd>
+
+  <dt class="code-syntax">
+    (complex-error-epsilon <em>complex</em><sub>1</sub> <em>complex</em><sub>2</sub> [epsilon])
+  </dt>
+  <dd>
+    Return a complex value with each component equal to the the error
+    expressed as a multiple of epsilon.
+    <p>
+      <code>#C(<em>(real relative error)/epsilon</em> <em>(imaginary
+      relative error)/epsilon</em>)</code>
+    </p>
+  </dd>
+
+  <dt class="code-syntax">
+    (number-epsilon <em>number</em><sub>1</sub> <em>number</em><sub>2</sub>)
+  </dt>
+  <dd>
+    Return the error between <code>number<sub>1</sub></code> and
+    <code>number<sub>2</sub></code>. For float and complex numbers,
+    the result is equivalent to <code>float-equal</code> and
+    <code>complex-equal</code>, respectively. If the numbers are
+    integers, the absolute difference between them is returned.
+  </dd>
+
+  <dt class="code-syntax">
+    (number-error-epsilon <em>number</em><sub>1</sub> <em>number</em><sub>2</sub> [epsilon])
+  </dt>
+  <dd>
+    Return the error expressed as amultiple of epsilon. For floating
+    point numbers, this is equivalent to
+    <code>float-error-epsilon</code>. Similarly, for complex numbers
+    this is equivalent to <code>complex-error-epsilon</code>. This
+    function is not applicable to integers.
+  </dd>
+
+  <dt class="code-syntax">
+    (sequence-error <em>sequence</em><sub>1</sub> <em>sequence</em><sub>2</sub>
+    [:test] [:error-function])
+  </dt>
+  <dd>
+    Return a nested list of the elements that are not equal according
+    <code>:test</code> with the associated index and error data
+    reported by <code>:error-function</code>.
+    <p>
+      <code>(index number1 number2 <em>(error-function n1 n2)</em>)</code>
+    </p>
+  </dd>
+
+  <dt class="code-syntax">
+    (array-error <em>array</em><sub>1</sub> <em>array</em><sub>2</sub>
+    [:test] [:error-function])
+  </dt>
+  <dd>
+    Return a nested list of the elements that are not equal according
+    <code>:test</code> with the associated indices and error data
+    reported by <code>:error-function</code>.
+    <p>
+      <code>(indices number1 number2 <em>(error-function n1 n2)</em>)</code>
+    </p>
+  </dd>
 
 </dl>
 
-<hr>
+<hr></hr>
 
-<p id="closing"><a href="mailto:tmh.public@gmail.com">Comments or suggestions?</a></p>
+<p id="closing">
+  <a href="mailto:tmh.public@gmail.com">Comments or suggestions?</a>
+</p>
 
-
-</body></html>
+</body>
+</html>
