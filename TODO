@@ -1,10 +1,13 @@
 LISP-UNIT TODO
 
-2009-03-16
+2009-04-04
 
-(1) Update the documentation to reflect the floating point extensions
-to the library. I've already updated some of the documentation, I just
-need to crank this one out some night.
+(1) Propose modifying the interface to ASSERT-NUMERICAL-EQUAL to
+require 3 arguments.
+
+(assert-numerical-equal test value form ...)
+
+This change will break existing unit testing code for GSLL.
 
 (2) Add unit testing for lisp-unit. I think the approach should be to
 note some functions and macros as identities that have be verified or
@@ -13,20 +16,24 @@ in terms of the identity functions. Maybe a core set of functionality
 should be verified using standard CL comparisons such as eq, eql, =,
 etc.
 
-(3) Better integrate the numeric diagnostic functions with the numeric
+(3) Design better data structures for the sequence and array error
+results. The data structure is currently a nested list. Should
+probably be a structure or class. Maybe a hash table.
+
+(4) Better integrate the numeric diagnostic functions with the numeric
 assertions. Currently, the VALUE and FORM argument of the assertion
 must be repeated as arguments to the diagnostic function. The intent
 is that you simply note the diagnostic function that you wish to apply
 to the test in the event of a failure and the VALUE and FORM arguments
 are automagically passed to that function.
 
-(4) Improve the test report. Initially, it would be useful to only
+(5) Improve the test report. Initially, it would be useful to only
 specifically report the failures and otherwise just report the overall
 summary. Other improvements might be some sort of progress indication,
 like 'PPPPFPPPFFFP.......' where P is pass, F is fail and (.) is not
 performed yet. Ideas here are welcome.
 
-(5) Interactive correction of tests. Something along the lines of the
+(6) Interactive correction of tests. Something along the lines of the
 debugger, maybe actually using the debugger. I envision a work-flow
 scenario where you run all of the tests and see X of Y tests
 failed. Now you enter a form like
@@ -42,3 +49,6 @@ test. If the re-run the test option is chosen, it should be after
 modifications to the definition of the test or the routine being
 tested are made. The idea for this interactive correction feature is
 to tighten the debug loop. Input on this idea is highly welcome.
+
+(7) Continue to improve the documentation. A documentation of the
+internals would also be useful.
