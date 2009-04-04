@@ -37,8 +37,9 @@ OTHER DEALINGS IN THE SOFTWARE.
            #:logically-equal #:set-equal
            #:use-debugger
            #:with-test-listener
-	   ;; Floating point predicates and assertions
+	   ;; Floating point parameters
 	   #:*epsilon* #:*significant-figures*
+	   ;; Floating point predicates and assertions
 	   #:float-equal #:assert-float-equal
 	   #:complex-equal #:assert-complex-equal
 	   #:number-equal #:assert-number-equal
