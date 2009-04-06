@@ -120,9 +120,9 @@ comparison."
   (cond
     ((zerop significand)
      (values significand 0))
-    ((> (abs significand) 10)
+    ((>= (abs significand) 10)
      (normalize-float (/ significand 10.0) (1+ exponent)))
-    ((<= (abs significand) 1)
+    ((< (abs significand) 1)
      (normalize-float (* significand 10.0) (1- exponent)))
     (t (values (/ significand 10.0) (1+ exponent)))))
 
@@ -141,9 +141,8 @@ figures."
 	    (and (= exp1 exp2)
 		 (< (abs (- sig1 sig2)) delta)))))))
 
-(defmacro assert-sigfig-equal (significant-figures expected form &rest extras)
-  (expand-assert :equal form form expected extras
-		 :test (lambda (f1 f2) (sigfig-equal f1 f2 significant-figures))))
+(defmacro assert-sigfig-equal (expected form &rest extras)
+  (expand-assert :equal form form expected extras :test #'sigfig-equal))
 
 ;;; (ARRAY-EQUAL array1 array2) => true or false
 (defun array-equal (array1 array2 &key (test #'number-equal))
@@ -265,15 +264,11 @@ figures."
 ;;; Sequence errors and the indices.
 (defun %sequence-error (sequence1 sequence2 test error-function)
   "Return a sequence of the indice and error between the sequences."
-  (let ((end (1- (length sequence1)))
+  (let ((n1 nil) (n2 nil)
 	(errseq '()))
-    (do* ((index 0 (1+ index))
-	  (n1 (elt sequence1 index) (elt sequence1 index))
-	  (n2 (elt sequence2 index) (elt sequence2 index)))
-	 ((>= index end)
-	  (unless (funcall test n1 n2)
-	    (push (list (1- index) n1 n2 (funcall error-function n1 n2))
-		  errseq)))
+    (dotimes (index (length sequence1) errseq)
+      (setf n1 (elt sequence1 index)
+	    n2 (elt sequence2 index))
       (unless (funcall test n1 n2)
 	(push (list (1- index) n1 n2 (funcall error-function n1 n2))
 	      errseq)))))
@@ -306,19 +301,13 @@ figures."
   "Return a list of the indices, values and error of the elements that
 are not equal."
   (let ((dimensions (array-dimensions array1))
-	(end (1- (array-total-size array1)))
+	(n1 nil) (n2 nil)
+	(indices '())
 	(errseq '()))
-    (do* ((index 0 (1+ index))
-	  (indices (%array-indices index dimensions)
-		   (%array-indices index dimensions))
-	  (n1 (apply #'aref array1 indices)
-	      (apply #'aref array1 indices))
-	  (n2 (apply #'aref array2 indices)
-	      (apply #'aref array2 indices)))
-	 ((>= index end)
-	  (unless (funcall test n1 n2)
-	    (push (list indices n1 n2 (funcall errfun n1 n2))
-		  errseq)))
+    (dotimes (index (array-total-size array1) errseq)
+      (setf indices (%array-indices index dimensions)
+	    n1 (apply #'aref array1 indices)
+	    n2 (apply #'aref array2 indices))
       (unless (funcall test n1 n2)
 	(push (list indices n1 n2 (funcall errfun n1 n2))
 	      errseq)))))
