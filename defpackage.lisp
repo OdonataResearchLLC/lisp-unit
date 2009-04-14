@@ -51,6 +51,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 	   #:float-error #:float-error-epsilon
 	   #:complex-error #:complex-error-epsilon
 	   #:number-error #:number-error-epsilon
-	   #:sequence-error #:array-error))
+	   #:sequence-error #:array-error
+	   ;; Floating point data functions
+	   #:make-2d-list
+	   #:complex-random
+	   #:make-random-list
+	   #:make-random-2d-list
+	   #:make-random-2d-array))
 
 (pushnew :lisp-unit common-lisp:*features*)

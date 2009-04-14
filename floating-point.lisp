@@ -336,3 +336,37 @@ are not equal."
     ((not (equal (array-dimensions array1) (array-dimensions array2)))
      (error "Arrays are not equal dimensions."))
     (t (%array-error array1 array2 test error-function))))
+
+;;; Floating point data functions
+(defun make-2d-list (rows columns &key (initial-element 0))
+  "Return a nested list with INITIAL-ELEMENT."
+  (mapcar (lambda (x) (make-list columns :initial-element x))
+          (make-list rows :initial-element initial-element)))
+
+(defun complex-random (limit &optional (state *random-state*))
+  "Return a random complex number."
+  (check-type limit complex)
+  (complex
+   (random (realpart limit) state)
+   (random (imagpart limit) state)))
+
+(defun make-random-list (size &optional (limit 1.0))
+  "Return a list of random numbers."
+  (mapcar (if (complexp limit) #'complex-random #'random)
+	  (make-list size :initial-element limit)))
+
+(defun make-random-2d-list (rows columns &optional (limit 1.0))
+  "Return a nested list of random numbers."
+  (mapcar (lambda (x) (make-random-list columns x))
+          (make-list rows :initial-element limit)))
+
+(defun make-random-2d-array (rows columns &optional (limit 1.0))
+  "Return a 2D array of random numbers."
+  (let ((new-array (make-array (list rows columns)))
+	(random-func (if (complexp limit)
+			 #'complex-random
+			 #'random)))
+    (dotimes (i0 rows new-array)
+      (dotimes (i1 columns)
+	(setf (aref new-array i0 i1)
+	      (funcall random-func limit))))))
