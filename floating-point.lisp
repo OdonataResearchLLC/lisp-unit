@@ -144,9 +144,21 @@ figures."
 (defmacro assert-sigfig-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'sigfig-equal))
 
+;;; (SEQ-EQUAL seq1 seq2) => true or false
+(defun seq-equal (seq1 seq2 &key (test #'number-equal))
+  "Return true if the elements of the sequences are equal."
+  (and
+   (typep seq1 'sequence) (typep seq2 'sequence)
+   (= (length seq1) (length seq2))
+   (every test seq1 seq2)))
+
+(defmacro assert-seq-equal (test expected form &rest extras)
+  (expand-assert :equal form form expected extras
+		 :test `(lambda (s1 s2) (seq-equal s1 s2 :test ,test))))
+
 ;;; (ARRAY-EQUAL array1 array2) => true or false
 (defun array-equal (array1 array2 &key (test #'number-equal))
-  "Return true if the elements of the array are equal."
+  "Return true if the elements of the arrays are equal."
   (when (equal (array-dimensions array1) (array-dimensions array2))
     (every test
      (make-array (array-total-size array1)
