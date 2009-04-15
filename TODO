@@ -1,13 +1,13 @@
 LISP-UNIT TODO
 
-2009-04-04
+2009-04-14
 
-(1) Propose modifying the interface to ASSERT-NUMERICAL-EQUAL to
-require 3 arguments.
-
-(assert-numerical-equal test value form ...)
-
-This change will break existing unit testing code for GSLL.
+(1) The default value of epsilon is dependent on the least precise
+argument to %FLOAT-EQUAL. This is determined in %FLOAT-EQUAL using a
+COND form. It would be more efficient to pull the determination of the
+default epsilon out of %FLOAT-EQUAL so that it is not repeated in
+every iteration of a loop, particularly for arrays that are guaranteed
+to have uniform floating point types.
 
 (2) Add unit testing for lisp-unit. I think the approach should be to
 note some functions and macros as identities that have be verified or

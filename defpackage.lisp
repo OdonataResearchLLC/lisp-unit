@@ -44,8 +44,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 	   #:complex-equal #:assert-complex-equal
 	   #:number-equal #:assert-number-equal
 	   #:sigfig-equal #:assert-sigfig-equal
-	   #:seq-equal #:assert-seq-equal
-	   #:array-equal #:assert-array-equal
 	   #:numerical-equal #:assert-numerical-equal
 	   ;; Floating point diagnostic functions
 	   #:float-error #:float-error-epsilon

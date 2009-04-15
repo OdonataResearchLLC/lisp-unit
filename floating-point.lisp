@@ -144,51 +144,49 @@ figures."
 (defmacro assert-sigfig-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'sigfig-equal))
 
-;;; (SEQ-EQUAL seq1 seq2) => true or false
-(defun seq-equal (seq1 seq2 &key (test #'number-equal))
-  "Return true if the elements of the sequences are equal."
-  (and
-   (typep seq1 'sequence) (typep seq2 'sequence)
-   (= (length seq1) (length seq2))
-   (every test seq1 seq2)))
-
-(defmacro assert-seq-equal (test expected form &rest extras)
-  (expand-assert :equal form form expected extras
-		 :test `(lambda (s1 s2) (seq-equal s1 s2 :test ,test))))
-
-;;; (ARRAY-EQUAL array1 array2) => true or false
-(defun array-equal (array1 array2 &key (test #'number-equal))
-  "Return true if the elements of the arrays are equal."
-  (when (equal (array-dimensions array1) (array-dimensions array2))
-    (every test
-     (make-array (array-total-size array1)
-		 :element-type (array-element-type array1)
-		 :displaced-to array1)
-     (make-array (array-total-size array2)
-		 :element-type (array-element-type array2)
-		 :displaced-to array2))))
-
-(defmacro assert-array-equal (test expected form &rest extras)
-  (expand-assert :equal form form expected extras
-		 :test `(lambda (a1 a2) (array-equal a1 a2 :test ,test))))
-
 ;;; (NUMERICAL-EQUAL result1 result2) => true or false
 ;;;
 ;;; This is a universal wrapper created by Liam Healy. It is
 ;;; implemented to support testing in GSLL. The interface is expanded,
 ;;; but backwards compatible with previous versions.
 ;;;
-(defun numerical-equal (result1 result2 &key (test #'number-equal))
-  (cond
-    ((and (numberp result1) (numberp result2))
-     (funcall test result1 result2))
-    ((and (typep result1 'sequence) (typep result2 'sequence))
-     (when (= (length result1) (length result2))
-       (every (lambda (r1 r2) (numerical-equal r1 r2 :test test))
-	      result1 result2)))
-    ((and (arrayp result1) (arrayp result2))
-     (array-equal result1 result2 :test test))
-    (t (error "~A and ~A are not valid arguments." result1 result2))))
+(defgeneric numerical-equal (result1 result2 &key test)
+  (:documentation
+   "Return true if the results are numerically equal according to :TEST."))
+
+(defmethod numerical-equal ((result1 number) (result2 number)
+			    &key (test #'number-equal))
+  "Return true if the the numbers are equal according to :TEST."
+  (funcall test result1 result2))
+
+(defmethod numerical-equal ((result1 list) (result2 list)
+			    &key (test #'number-equal))
+  "Return true if the lists are equal in length and each element is
+equal according to :TEST."
+  (when (= (length result1) (length result2))
+    (every (lambda (r1 r2) (numerical-equal r1 r2 :test test))
+	   result1 result2)))
+
+(defmethod numerical-equal ((result1 vector) (result2 vector)
+			    &key (test #'number-equal))
+  "Return true if the vectors are equal in length and each element is
+equal according to :TEST."
+  (when (= (length result1) (length result2))
+    (every (lambda (r1 r2) (numerical-equal r1 r2 :test test))
+	   result1 result2)))
+
+(defmethod numerical-equal ((result1 array) (result2 array)
+			    &key (test #'number-equal))
+  "Return true if the arrays are equal in dimension and each element
+is equal according to :TEST."
+  (when (equal (array-dimensions result1) (array-dimensions result2))
+    (every test
+	   (make-array (array-total-size result1)
+		       :element-type (array-element-type result1)
+		       :displaced-to result1)
+	   (make-array (array-total-size result2)
+		       :element-type (array-element-type result2)
+		       :displaced-to result2))))
 
 (defmacro assert-numerical-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'numerical-equal))
@@ -362,7 +360,8 @@ are not equal."
 
 (defun make-random-2d-array (rows columns &optional (limit 1.0))
   "Return a 2D array of random numbers."
-  (let ((new-array (make-array (list rows columns)))
+  (let ((new-array (make-array (list rows columns)
+			       :element-type (type-of limit)))
 	(random-func (if (complexp limit)
 			 #'complex-random
 			 #'random)))
