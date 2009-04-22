@@ -159,21 +159,36 @@ figures."
   "Return true if the the numbers are equal according to :TEST."
   (funcall test result1 result2))
 
+(defun %sequence-equal (seq1 seq2 test)
+  "Return true if the sequences are equal in length and each element
+is equal according to :TEST."
+  (when (= (length seq1) (length seq2))
+    (every (lambda (s1 s2) (numerical-equal s1 s2 :test test))
+	   seq1 seq2)))
+
 (defmethod numerical-equal ((result1 list) (result2 list)
 			    &key (test #'number-equal))
   "Return true if the lists are equal in length and each element is
 equal according to :TEST."
-  (when (= (length result1) (length result2))
-    (every (lambda (r1 r2) (numerical-equal r1 r2 :test test))
-	   result1 result2)))
+  (%sequence-equal result1 result2 test))
 
 (defmethod numerical-equal ((result1 vector) (result2 vector)
 			    &key (test #'number-equal))
   "Return true if the vectors are equal in length and each element is
 equal according to :TEST."
-  (when (= (length result1) (length result2))
-    (every (lambda (r1 r2) (numerical-equal r1 r2 :test test))
-	   result1 result2)))
+  (%sequence-equal result1 result2 test))
+
+(defmethod numerical-equal ((result1 list) (result2 vector)
+			    &key (test #'number-equal))
+  "Return true if every element of the list is equal to the
+corresponding element of the vector."
+  (%sequence-equal result1 result2 test))
+
+(defmethod numerical-equal ((result1 vector) (result2 list)
+			    &key (test #'number-equal))
+  "Return true if every element of the list is equla to the
+corresponding element of the vector."
+  (%sequence-equal result1 result2 test))
 
 (defmethod numerical-equal ((result1 array) (result2 array)
 			    &key (test #'number-equal))
