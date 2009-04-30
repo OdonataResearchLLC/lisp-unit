@@ -107,8 +107,7 @@ comparison."
     ((and (typep number1 '(complex float)) (typep number2 '(complex float)))
      (%complex-equal number1 number2 epsilon))
     ((and (numberp number1) (numberp number2))
-     (= number1 number2))
-    (t (error "~A and ~A are not numbers." number1 number2))))
+     (= number1 number2))))
 
 (defmacro assert-number-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'number-equal))
