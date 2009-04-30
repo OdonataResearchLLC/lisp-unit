@@ -87,9 +87,12 @@ than some epsilon."
   "Return true if the relative error between Re(complex1),
 Re(complex2) and between Im(complex1), Im(complex2) are each less than
 epsilon."
-  (when (and (typep complex1 '(complex float))
-	     (typep complex2 '(complex float)))
-    (%complex-equal complex1 complex2 epsilon)))
+  (cond
+    ((and (typep complex1 '(complex float))
+          (typep complex2 '(complex float)))
+     (%complex-equal complex1 complex2 epsilon))
+    ((and (complexp complex1) (complexp complex2))
+     (= complex1 complex2))))
 
 (defmacro assert-complex-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'complex-equal))
@@ -356,12 +359,30 @@ are not equal."
   (mapcar (lambda (x) (make-list columns :initial-element x))
           (make-list rows :initial-element initial-element)))
 
-(defun complex-random (limit &optional (state *random-state*))
-  "Return a random complex number."
-  (check-type limit complex)
+(defun %complex-float-random (limit &optional (state *random-state*))
+  "Return a random complex float number."
   (complex
    (random (realpart limit) state)
    (random (imagpart limit) state)))
+
+(defun %complex-rational-random (limit &optional (state *random-state*))
+  "Return a random complex rational number."
+  (let ((imaglimit (imagpart limit)))
+    (if (< 1 imaglimit)
+        (complex
+         (random (realpart limit) state)
+         ;; Ensure that the imaginary part is not zero.
+         (do ((im (random imaglimit state)
+                  (random imaglimit state)))
+             ((< 0 im) im)))
+        (error "Imaginary part must be greater than 1."))))
+
+(defun complex-random (limit &optional (state *random-state*))
+  "Return a random complex number. "
+  (check-type limit complex)
+  (if (typep limit '(complex rational))
+      (%complex-rational-random limit state)
+      (%complex-float-random limit state)))
 
 (defun make-random-list (size &optional (limit 1.0))
   "Return a list of random numbers."
