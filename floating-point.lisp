@@ -98,16 +98,16 @@ epsilon."
   (expand-assert :equal form form expected extras :test #'complex-equal))
 
 ;;; (NUMBER-EQUAL number1 number2) => true or false
-(defun number-equal (number1 number2 &optional (epsilon *epsilon*))
+(defun number-equal (number1 number2 &optional
+                     (epsilon *epsilon*) type-agreement)
   "Return true if the numbers are equal using the appropriate
 comparison."
-  (cond
-    ((and (floatp number1) (floatp number2))
-     (%float-equal number1 number2 epsilon))
-    ((and (typep number1 '(complex float)) (typep number2 '(complex float)))
-     (%complex-equal number1 number2 epsilon))
-    ((and (numberp number1) (numberp number2))
-     (= number1 number2))))
+  (and
+   (or (not type-agreement) (eq (type-of number1) (type-of number2)))
+   (%complex-equal
+    (coerce number1 '(complex double-float))
+    (coerce number2 '(complex double-float))
+    epsilon)))
 
 (defmacro assert-number-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'number-equal))
