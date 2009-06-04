@@ -4,38 +4,31 @@ LISP-UNIT TODO
 
 (1) Generate a tutorial describing how to use LISP-UNT.
 
-(2) The default value of epsilon is dependent on the least precise
-argument to %FLOAT-EQUAL. This is determined in %FLOAT-EQUAL using a
-COND form. It would be more efficient to pull the determination of the
-default epsilon out of %FLOAT-EQUAL so that it is not repeated in
-every iteration of a loop, particularly for arrays that are guaranteed
-to have uniform floating point types.
-
-(3) Add unit testing for lisp-unit. I think the approach should be to
+(2) Add unit testing for lisp-unit. I think the approach should be to
 note some functions and macros as identities that have be verified or
 are logically correct. All tests of lisp-unit should then be defined
 in terms of the identity functions. Maybe a core set of functionality
 should be verified using standard CL comparisons such as eq, eql, =,
 etc.
 
-(4) Design better data structures for the sequence and array error
+(3) Design better data structures for the sequence and array error
 results. The data structure is currently a nested list. Should
 probably be a structure or class. Maybe a hash table.
 
-(5) Better integrate the numeric diagnostic functions with the numeric
+(4) Better integrate the numeric diagnostic functions with the numeric
 assertions. Currently, the VALUE and FORM argument of the assertion
 must be repeated as arguments to the diagnostic function. The intent
 is that you simply note the diagnostic function that you wish to apply
 to the test in the event of a failure and the VALUE and FORM arguments
 are automagically passed to that function.
 
-(6) Improve the test report. Initially, it would be useful to only
+(5) Improve the test report. Initially, it would be useful to only
 specifically report the failures and otherwise just report the overall
 summary. Other improvements might be some sort of progress indication,
 like 'PPPPFPPPFFFP.......' where P is pass, F is fail and (.) is not
 performed yet. Ideas here are welcome.
 
-(7) Interactive correction of tests. Something along the lines of the
+(6) Interactive correction of tests. Something along the lines of the
 debugger, maybe actually using the debugger. I envision a work-flow
 scenario where you run all of the tests and see X of Y tests
 failed. Now you enter a form like
@@ -52,4 +45,4 @@ modifications to the definition of the test or the routine being
 tested are made. The idea for this interactive correction feature is
 to tighten the debug loop. Input on this idea is highly welcome.
 
-(8) A documentation of the internals would also be useful.
+(7) A documentation of the internals would also be useful.
