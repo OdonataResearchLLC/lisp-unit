@@ -37,18 +37,21 @@ OTHER DEALINGS IN THE SOFTWARE.
            #:logically-equal #:set-equal
            #:use-debugger
            #:with-test-listener
+           ;; Rational predicates and assertions
+           #:rational-equal #:assert-rational-equal
 	   ;; Floating point parameters
-	   #:*epsilon* #:*significant-figures*
+	   #:*measure* #:*epsilon* #:*significant-figures*
+           ;; Floating point functions
+           #:default-epsilon #:relative-error
+           #:sumsq #:sump #:norm
+           #:relative-error-norm
 	   ;; Floating point predicates and assertions
-	   #:float-equal #:assert-float-equal
-	   #:complex-equal #:assert-complex-equal
-	   #:number-equal #:assert-number-equal
+           #:float-equal #:assert-float-equal
 	   #:sigfig-equal #:assert-sigfig-equal
+           #:norm-equal #:assert-norm-equal
+	   #:number-equal #:assert-number-equal
 	   #:numerical-equal #:assert-numerical-equal
 	   ;; Floating point diagnostic functions
-	   #:float-error #:float-error-epsilon
-	   #:complex-error #:complex-error-epsilon
-	   #:number-error #:number-error-epsilon
 	   #:sequence-error #:array-error
 	   ;; Floating point data functions
 	   #:make-2d-list

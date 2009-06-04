@@ -34,6 +34,8 @@
   :components ((:file "defpackage")
 	       (:file "lisp-unit"
 		      :depends-on ("defpackage"))
+               (:file "rational"
+                      :depends-on ("defpackage"))
 	       (:file "floating-point"
 		      :depends-on ("defpackage"
 				   "lisp-unit"))))
