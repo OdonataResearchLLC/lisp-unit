@@ -71,6 +71,10 @@
   (:documentation
    "Return true if the norm of the data is equal."))
 
+(defgeneric sigfig-equal (data1 data2 &optional significant-figures)
+  (:documentation
+   "Return true if the data have equal significant figures."))
+
 (defgeneric numerical-equal (result1 result2 &key test)
   (:documentation
    "Return true if the results are numerically equal according to :TEST."))
@@ -484,20 +488,19 @@ error norm is less than epsilon."
 ;;;
 ;;; To avoid using 0.1, first 1.0 <= significand < 10. On the final
 ;;; return, scale 0.1 <= significand < 1.
-(defun normalize-float (significand &optional (exponent 0))
+(defun %normalize-float (significand &optional (exponent 0))
   "Return the normalized floating point number and exponent."
   (cond
     ((zerop significand)
      (values significand 0))
     ((>= (abs significand) 10)
-     (normalize-float (/ significand 10.0) (1+ exponent)))
+     (%normalize-float (/ significand 10.0) (1+ exponent)))
     ((< (abs significand) 1)
-     (normalize-float (* significand 10.0) (1- exponent)))
+     (%normalize-float (* significand 10.0) (1- exponent)))
     (t (values (/ significand 10.0) (1+ exponent)))))
 
 ;;; (SIGFIG-EQUAL float1 float2 significant-figures) => true or false
-;;; TODO : Convert to a generic function and specialize for sequences.
-(defun sigfig-equal (float1 float2 &optional (significant-figures *significant-figures*))
+(defun %sigfig-equal (float1 float2 significant-figures)
   "Return true if the floating point numbers have equal significant
 figures."
   ;; Convert 0.5 to precision of FLOAT1 and 10 to precision of FLOAT2.
@@ -506,10 +509,65 @@ figures."
   (let ((delta (* (float 0.5 float1) (expt (float 10 float2) (- significant-figures)))))
     (if (or (zerop float1) (zerop float2))
 	(< (abs (+ float1 float2)) delta)
-	(multiple-value-bind (sig1 exp1) (normalize-float float1)
-	  (multiple-value-bind (sig2 exp2) (normalize-float float2)
+	(multiple-value-bind (sig1 exp1) (%normalize-float float1)
+	  (multiple-value-bind (sig2 exp2) (%normalize-float float2)
 	    (and (= exp1 exp2)
 		 (< (abs (- sig1 sig2)) delta)))))))
+
+(defmethod sigfig-equal ((data1 float) (data2 float) &optional
+                         (significant-figures *significant-figures*))
+  "Return true if the floating point numbers have equal significant
+figures."
+  (%sigfig-equal data1 data2 significant-figures))
+
+(defun %seq-sigfig-equal (seq1 seq2 significant-figures)
+  "Return true if the element-wise comparison is equal to the
+specified significant figures."
+  (or
+   (and (null seq1) (null seq2))
+   (when (= (length seq1) (length seq2))
+     (every
+      (lambda (d1 d2) (sigfig-equal d1 d2 significant-figures))
+      seq1 seq2))))
+
+(defmethod sigfig-equal ((data1 list) (data2 list) &optional
+                         (significant-figures *significant-figures*))
+  "Return true if the lists are equal in length and the element-wise
+comparison is equal to significant figures."
+  (%seq-sigfig-equal data1 data2 significant-figures))
+
+(defmethod sigfig-equal ((data1 vector) (data2 list) &optional
+                         (significant-figures *significant-figures*))
+  "Return true if the vector and the list are equal in length and the
+element-wise comparison is equal to significant figures."
+  (%seq-sigfig-equal data1 data2 significant-figures))
+
+(defmethod sigfig-equal ((data1 list) (data2 vector) &optional
+                         (significant-figures *significant-figures*))
+  "Return true if the list and the vector are equal in length and the
+element-wise comparison is equal to significant figures."
+  (%seq-sigfig-equal data1 data2 significant-figures))
+
+(defmethod sigfig-equal ((data1 vector) (data2 vector) &optional
+                         (significant-figures *significant-figures*))
+  "Return true if the vectors are equal in length and the element-wise
+comparison is equal to significant figures."
+  (%seq-sigfig-equal data1 data2 significant-figures))
+
+(defmethod sigfig-equal ((data1 array) (data2 array) &optional
+                         (significant-figures *significant-figures*))
+  "Return true if the arrays are equal in length and the element-wise
+comparison is equal to significant figures."
+  (when (equal (array-dimensions data1)
+               (array-dimensions data2))
+    (%seq-sigfig-equal
+     (make-array (array-total-size data1)
+                 :element-type (array-element-type data1)
+                 :displaced-to data1)
+     (make-array (array-total-size data2)
+                 :element-type (array-element-type data2)
+                 :displaced-to data2)
+     significant-figures)))
 
 (defmacro assert-sigfig-equal (expected form &rest extras)
   (expand-assert :equal form form expected extras :test #'sigfig-equal))

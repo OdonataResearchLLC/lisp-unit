@@ -2,7 +2,7 @@ LISP-UNIT TODO
 
 2009-04-15
 
-(1) Generate a tutorial describing how to use LISP-UNT.
+(1) Generate a tutorial describing how to use LISP-UNIT.
 
 (2) Add unit testing for lisp-unit. I think the approach should be to
 note some functions and macros as identities that have be verified or

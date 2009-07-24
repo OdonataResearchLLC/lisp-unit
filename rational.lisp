@@ -1,6 +1,6 @@
 ;;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp -*-
 ;;;
-;;; Floating tests and assertions for LISP-UNIT
+;;; Rational tests and assertions for LISP-UNIT
 ;;;
 ;;; Copyright (c) 2009 Thomas M. Hermann
 ;;; 
