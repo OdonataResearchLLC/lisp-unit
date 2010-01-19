@@ -25,11 +25,12 @@
   visit <a href="http://www.junit.org/" target="_blank">www.junit.org</a>.
 </p>
 
-<p>This page has two parts:</p>
+<p>This page has three parts:</p>
 
 <ul>
   <li><a href="#overview">An overview with examples</a></li>
-  <li><a href="#reference">A reference section with all forms and functions</a></li>
+  <li><a href="#reference">A reference section with the basic forms and functions</a></li>
+  <li><a href="#extension">A reference section with the extended forms and functions</a></li>
 </ul>
 
 <a name="overview"></a>
@@ -222,8 +223,8 @@ MY-SQRT: 2 assertions passed, 3 failed.
 <p>
   There are also assertion forms to test what code prints, what errors
   code returns, or what a macro expands into.  A complete list of
-  assertion forms is in <a href="#ref-assertion">the reference
-  section</a>.
+  assertion forms is in the <a href="#ref-assertion">reference</a> and
+  <a href="#extension">extensions</a> sections.
 </p>
 
 <p class="quote">
@@ -265,7 +266,7 @@ MY-SQRT: 2 assertions passed, 3 failed.
 <blockquote><pre>
 (defpackage :date
   (:use :common-lisp)
-  (:export #:date-&gt;string #:string-&gt;date))
+  (:export :date-&gt;string :string-&gt;date))
   
 (in-package :date)
 
@@ -306,12 +307,12 @@ MY-SQRT: 2 assertions passed, 3 failed.
 <h1>Reference Section</h1>
 
 <p>
-  Here is a list of the functions and macros exported by
-  <strong>lisp-unit</strong>.
+  The list of the basic functions and macros exported by
+  <strong>lisp-unit</strong> are presented in this section.
 </p>
 
 <a name="ref-tests"></a>
-<h3>Functions for managing tests</h3>
+<h2>Functions for managing tests</h2>
 
 <dl>
   <dt class="code-syntax">
@@ -328,7 +329,7 @@ MY-SQRT: 2 assertions passed, 3 failed.
   </dd>
 
   <dt class="code-syntax">
-    (get-tests [<em>package</em>)
+    (get-tests [<em>package</em>])
   </dt>
   <dd>
     This function returns the names of all the tests that have been
@@ -337,7 +338,7 @@ MY-SQRT: 2 assertions passed, 3 failed.
   </dd>
 
   <dt class="code-syntax">
-    (get-test-code <em>name</em> [<em>package</em>)
+    (get-test-code <em>name</em> [<em>package</em>])
   </dt>
   <dd>
     This function returns the body of the code stored for the test
@@ -397,7 +398,7 @@ MY-SQRT: 2 assertions passed, 3 failed.
 </dl>
 
 <a name="ref-assertion"></a>
-<h3>Forms for assertions</h3>
+<h2>Forms for assertions</h2>
 
 <p>
   All of the assertion forms are macros.  They tally a failure if the
@@ -479,7 +480,7 @@ MY-SQRT: 2 assertions passed, 3 failed.
     error that is equal to or a subtype of
     <em>condition-type</em>. Use <code>error</code> to refer to any
     kind of error. See <a
-    href="http://www.lisp.org/HyperSpec/Body/sec_9-1-1.html">condition
+    href="http://www.lispworks.com/documentation/HyperSpec/Body/09_aa.htm">condition
     types in the Common Lisp Hyperspec</a> for other possible
     names. For example,
 
@@ -491,7 +492,7 @@ MY-SQRT: 2 assertions passed, 3 failed.
 </dl>
 
 <a name="ref-predicates"></a>
-<h3>Utility predicates</h3>
+<h2>Utility predicates</h2>
 
 <p>
   Several predicate functions are exported that are often useful in
@@ -517,27 +518,34 @@ MY-SQRT: 2 assertions passed, 3 failed.
   </dd>
 </dl>
 
-<h3>Floating point predicates and tests</h3>
+<a name="extension"></a>
+<h1>Extensions Section</h1>
 
 <p>
-  The original list unit has been extended with several floating point
-  predicate functions and tests. The predicates can be used with
-  <code>assert-equality</code> or the corresponding tests can be
-  directly applied. All of the floating point comparisons are
-  considered equal if the relative error between the values is less
-  than some epsilon. The internal default value of
-  <code>epsilon</code> is is twice the appropriate float epsilon
-  (i.e. <code>2*single-float-epsilon</code> or
-  <code>2*double-float-epsilon</code>). Epsilon can be controlled at a
-  lexical level using the package variable <code>*epsilon*</code>. If
-  <code>*epsilon*</code> is set to <code>nil</code>, the internal
-  epsilon values are used. This is the default value of
-  <code>epsilon</code>.
+  The extensions to <strong>lisp-unit</strong> are presented in this
+  section. The original <strong>lisp-unit</strong> has been extended
+  with predicate functions and assertions to support numerical
+  testing. The predicates can be used with
+  <code>assert-equality</code> or with the corresponding
+  assertions. All extensions are implemented using generic functions
+  and consequently can be specialized for user classes.
+</p>
+
+<h2>Floating point predicates and assertions</h2>
+
+<p>
+  The internal default value of <code>epsilon</code> is is twice the
+  appropriate float epsilon (i.e. <code>2*single-float-epsilon</code>
+  or <code>2*double-float-epsilon</code>). Epsilon can be controlled
+  at a lexical level using the package variable
+  <code>*epsilon*</code>. If <code>*epsilon*</code> is set to
+  <code>nil</code>, the internal epsilon values are used. This is the
+  default value of <code>epsilon</code>.
 </p>
 
 <dl>
   <dt class="code-syntax">
-    (float-equal <em>float</em><sub>1</sub> <em>float</em><sub>2</sub> [epsilon])
+    (float-equal <em>data</em><sub>1</sub> <em>data</em><sub>2</sub> [epsilon])
   </dt>
   <dt class="code-syntax">
     (assert-float-equal <em>value</em> <em>form</em>
@@ -545,49 +553,15 @@ MY-SQRT: 2 assertions passed, 3 failed.
   </dt>
   <dd>
     Return true if the relative error between
-    <code>float<sub>1</sub></code> and <code>float<sub>2</sub></code>
-    is less than <code>epsilon</code>. The test tallies the failure if
-    <code>value</code> is not equal to the result returned from
-    <code>form</code>, using <code>float-equal</code>.
+    <code>data<sub>1</sub></code> and <code>data<sub>2</sub></code>
+    is less than <code>epsilon</code>. The assertion tallies the
+    failure if <code>value</code> is not equal to the result returned
+    from <code>form</code>, using <code>float-equal</code>.
   </dd>
 
   <dt class="code-syntax">
-    (complex-equal <em>complex</em><sub>1</sub> <em>complex</em><sub>2</sub> [epsilon])
-  </dt>
-  <dt class="code-syntax">
-    (assert-complex-equal <em>value</em> <em>form</em>
-     [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
-  </dt>
-  <dd>
-    Return true if the relative error between
-    Real(<code>complex<sub>1</sub></code>),
-    Real(<code>complex<sub>2</sub></code>) and
-    Imaginary(<code>complex<sub>1</sub></code>),
-    Imaginary(<code>complex<sub>2</sub></code>) are each less than
-    <code>epsilon</code>. The test tallies the failure if
-    <code>value</code> is not equal to the result returned from
-    <code>form</code>, using <code>complex-equal</code>.
-  </dd>
-  <dt class="code-syntax">
-    (number-equal <em>number</em><sub>1</sub> <em>number</em><sub>2</sub> [epsilon])
-  </dt>
-  
-  <dt class="code-syntax">
-    (assert-number-equal <em>value</em> <em>form</em>
-     [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
-  </dt>
-  <dd>
-    Return true if the error between <code>number<sub>1</sub></code>
-    and <code>number<sub>2</sub></code> is less than
-    <code>epsilon</code> for floating point numbers. If the numbers
-    are integers, return true if the numbers are equal.  The test
-    tallies the failure if <code>value</code> is not equal to the
-    result returned from <code>form</code>, using
-    <code>number-equal</code>.
-  </dd>
-
-  <dt class="code-syntax">
-    (sigfig-equal <em>float</em><sub>1</sub> <em>float</em><sub>2</sub> [significant-figures])
+    (sigfig-equal <em>float</em><sub>1</sub> <em>float</em><sub>2</sub>
+     [significant-figures])
   </dt>
   <dt class="code-syntax">
     (assert-sigfig-equal <em>value</em> <em>form</em>
@@ -604,21 +578,39 @@ MY-SQRT: 2 assertions passed, 3 failed.
   </dd>
 
   <dt class="code-syntax">
-    (array-equal <em>array</em><sub>1</sub> <em>array</em><sub>2</sub> [:test])
+    (norm-equal <em>data</em><sub>1</sub> <em>data</em><sub>2</sub>
+     [epsilon] [measure])
   </dt>
   <dt class="code-syntax">
-    (assert-array-equal <em>test</em> <em>value</em> <em>form</em>
-    [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+    (assert-norm-equal <em>value</em> <em>form</em>
+     [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
   </dt>
   <dd>
-    Return true if each element of <code>array<sub>1</sub></code> and
-    <code>array<sub>2</sub></code> is equal according to
-    <code>:test</code> which defaults to <code>number-equal</code>.
-    The test tallies the failure if <code>value</code> is not equal to
-    the result returned from <code>form</code>, using
-    <code>numerical-equal</code>. In general, <code>test</code> must
-    be a function that accepts 2 arguments and returns <em>true</em>
-    or <em>false</em>.
+    Return true if the relative error norm between
+    <code>data<sub>1</sub></code> and <code>data<sub>2</sub></code> is
+    less than <code>epsilon</code>.
+  </dd>
+</dl>
+
+<h2>GSLL Specific Predicates and Assertions</h2>
+<dl>
+  <dt class="code-syntax">
+    (number-equal <em>number</em><sub>1</sub> <em>number</em><sub>2</sub>
+     [epsilon] [type-eq-p])
+  </dt>
+  <dt class="code-syntax">
+    (assert-number-equal <em>value</em> <em>form</em>
+     [<em>form</em><sub>1</sub> <em>form</em><sub>2</sub> ...])
+  </dt>
+  <dd>
+    Return true if the error between <code>number<sub>1</sub></code>
+    and <code>number<sub>2</sub></code> is less than
+    <code>epsilon</code>. The numbers must be the same type unless
+    <code>type-eq-p</code> is <code>t</code>. For the comparison, both
+    numbers are coerced to <code>(complex double-float)</code> and
+    passed to <code>float-equal</code>. The test tallies the failure
+    if <code>value</code> is not equal to the result returned from
+    <code>form</code>, using <code>number-equal</code>.
   </dd>
 
   <dt class="code-syntax">
@@ -640,113 +632,51 @@ MY-SQRT: 2 assertions passed, 3 failed.
   </dd>
 </dl>
 
-<a name="ref-diagnostic"></a>
-<h3>Floating point diagnostic functions</h3>
-
+<h2>Floating point functions</h2>
 <p>
-  Failing a unit test is only half of the problem. The other half is
-  understanding why the test failed and what is required to fix
-  it. The default values of <em>epsilon</em> will only be applicable
-  in a few situations. In many situations, the acceptable value of
-  <em>epsilon</em> is dependent on the routine being examined. When
-  testing large sequences or arrays, it is not enough to know that
-  each element is not equal. It is usually necessary to know which
-  specific elements are not equal. The functions presented in this
-  section facilitate diagnosis test failures for floating point
-  numbers, sequences and arrays. For tests that compare the relative
-  error against epsilon, the value of epsilon can be controlled by
-  setting <code>*epsilon*</code>. Similarly, if
-  <code>sigfig-equal</code> is used as the test, the number of
-  significant figures can be set by setting
-  <code>*significant-figures*</code>.
+  The floating point functions can be specialized for user data types
+  and aid in writing user specific predicates.
 </p>
 
 <dl>
   <dt class="code-syntax">
-    (float-error <em>float</em><sub>1</sub> <em>float</em><sub>2</sub>)
+    (default-epsilon <em>value</em>)
   </dt>
   <dd>
-    Return the relative error between <code>float<sub>1</sub></code>
-    and <code>float<sub>2</sub></code>.
+    Return the default epsilon for <code>value</code>.
   </dd>
-
   <dt class="code-syntax">
-    (float-error-epsilon <em>float</em><sub>1</sub> <em>float</em><sub>2</sub> [epsilon])
+    (relative-error <em>exact</em> <em>approximate</em>)
   </dt>
   <dd>
-    Return the error expressed as a multiple of epsilon.
-    <em>(relative error)/epsilon</em>
+    Return the relative error.
   </dd>
-
   <dt class="code-syntax">
-    (complex-epsilon <em>complex</em><sub>1</sub> <em>complex</em><sub>2</sub>)
+    (sumsq <em>data</em>)
   </dt>
   <dd>
-    Return a complex value with each component equal to the relative
-    error between the components of <code>complex<sub>1</sub></code>
-    and <code>complex<sub>2</sub></code>, respectively.
+    Return the scaling parameter and the sum of the squares of the
+    data.
   </dd>
-
   <dt class="code-syntax">
-    (complex-error-epsilon <em>complex</em><sub>1</sub> <em>complex</em><sub>2</sub> [epsilon])
+    (sump <em>data</em> <em>p</em>)
   </dt>
   <dd>
-    Return a complex value with each component equal to the the error
-    expressed as a multiple of epsilon.
-    <p>
-      <code>#C(<em>(real relative error)/epsilon</em> <em>(imaginary
-      relative error)/epsilon</em>)</code>
-    </p>
+    Return the scaling parameter and the sum of the powers of p of the
+    data.
   </dd>
-
   <dt class="code-syntax">
-    (number-epsilon <em>number</em><sub>1</sub> <em>number</em><sub>2</sub>)
+    (norm <em>data</em> [<em>measure</em>])
   </dt>
   <dd>
-    Return the error between <code>number<sub>1</sub></code> and
-    <code>number<sub>2</sub></code>. For float and complex numbers,
-    the result is equivalent to <code>float-equal</code> and
-    <code>complex-equal</code>, respectively. If the numbers are
-    integers, the absolute difference between them is returned.
+    Return the element-wise norm of the data.
   </dd>
-
   <dt class="code-syntax">
-    (number-error-epsilon <em>number</em><sub>1</sub> <em>number</em><sub>2</sub> [epsilon])
+    (relative-error-norm <em>exact</em> <em>approximate</em> [<em>measure</em>])
   </dt>
   <dd>
-    Return the error expressed as amultiple of epsilon. For floating
-    point numbers, this is equivalent to
-    <code>float-error-epsilon</code>. Similarly, for complex numbers
-    this is equivalent to <code>complex-error-epsilon</code>. This
-    function is not applicable to integers.
+    Return the relative error norm.
   </dd>
-
-  <dt class="code-syntax">
-    (sequence-error <em>sequence</em><sub>1</sub> <em>sequence</em><sub>2</sub>
-    [:test] [:error-function])
-  </dt>
-  <dd>
-    Return a nested list of the elements that are not equal according
-    <code>:test</code> with the associated index and error data
-    reported by <code>:error-function</code>.
-    <p>
-      <code>(index number1 number2 <em>(error-function n1 n2)</em>)</code>
-    </p>
-  </dd>
-
-  <dt class="code-syntax">
-    (array-error <em>array</em><sub>1</sub> <em>array</em><sub>2</sub>
-    [:test] [:error-function])
-  </dt>
-  <dd>
-    Return a nested list of the elements that are not equal according
-    <code>:test</code> with the associated indices and error data
-    reported by <code>:error-function</code>.
-    <p>
-      <code>(indices number1 number2 <em>(error-function n1 n2)</em>)</code>
-    </p>
-  </dd>
-
 </dl>
 
 <hr></hr>
