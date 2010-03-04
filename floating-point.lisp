@@ -503,16 +503,12 @@ error norm is less than epsilon."
 (defun %sigfig-equal (float1 float2 significant-figures)
   "Return true if the floating point numbers have equal significant
 figures."
-  ;; Convert 0.5 to precision of FLOAT1 and 10 to precision of FLOAT2.
-  ;; Then, rely on Rule of Float and Rational Contagion, CLHS 12.1.4.1,
-  ;; to obtain a DELTA of the proper precision.
-  (let ((delta (* (float 0.5 float1) (expt (float 10 float2) (- significant-figures)))))
-    (if (or (zerop float1) (zerop float2))
-	(< (abs (+ float1 float2)) delta)
-	(multiple-value-bind (sig1 exp1) (%normalize-float float1)
-	  (multiple-value-bind (sig2 exp2) (%normalize-float float2)
-	    (and (= exp1 exp2)
-		 (< (abs (- sig1 sig2)) delta)))))))
+  (if (or (zerop float1) (zerop float2))
+      (< (abs (+ float1 float2)) (* 5D-1 (expt 1D1 (- significant-figures))))
+      (multiple-value-bind (sig1 exp1) (%normalize-float float1)
+        (multiple-value-bind (sig2 exp2) (%normalize-float float2)
+          (= (round (* sig1 (expt 1D1 significant-figures)))
+             (round (* sig2 (expt 1D1 (- significant-figures (- exp1 exp2))))))))))
 
 (defmethod sigfig-equal ((data1 float) (data2 float) &optional
                          (significant-figures *significant-figures*))
