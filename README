@@ -1,0 +1,9 @@
+lisp-unit
+
+lisp-unit is a Common Lisp library that supports unit testing. It is
+an extension of the library written by Chris Riesbeck. There is a long
+history of testing packages in Lisp, usually called "regression"
+testers. More recent packages in Lisp and other languages have been
+inspired by JUnit for Java.
+
+Documentation is located in the documentation directory.
