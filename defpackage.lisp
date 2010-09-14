@@ -26,38 +26,38 @@ OTHER DEALINGS IN THE SOFTWARE.
 ;;; Packages
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(common-lisp:defpackage #:lisp-unit
-  (:use #:common-lisp)
-  (:export #:define-test #:run-all-tests #:run-tests
-           #:assert-eq #:assert-eql #:assert-equal #:assert-equalp
-           #:assert-error #:assert-expands #:assert-false 
-           #:assert-equality #:assert-prints #:assert-true
-           #:get-test-code #:get-tests
-           #:remove-all-tests #:remove-tests
-           #:logically-equal #:set-equal
-           #:use-debugger
-           #:with-test-listener
+(defpackage :lisp-unit
+  (:use :common-lisp)
+  (:export :define-test :run-all-tests :run-tests
+           :assert-eq :assert-eql :assert-equal :assert-equalp
+           :assert-error :assert-expands :assert-false 
+           :assert-equality :assert-prints :assert-true
+           :get-test-code :get-tests
+           :remove-all-tests :remove-tests
+           :logically-equal :set-equal
+           :use-debugger
+           :with-test-listener
            ;; Rational predicates and assertions
-           #:rational-equal #:assert-rational-equal
+           :rational-equal :assert-rational-equal
 	   ;; Floating point parameters
-	   #:*measure* #:*epsilon* #:*significant-figures*
+	   :*measure* :*epsilon* :*significant-figures*
            ;; Floating point functions
-           #:default-epsilon #:relative-error
-           #:sumsq #:sump #:norm
-           #:relative-error-norm
+           :default-epsilon :relative-error
+           :sumsq :sump :norm
+           :relative-error-norm
 	   ;; Floating point predicates and assertions
-           #:float-equal #:assert-float-equal
-	   #:sigfig-equal #:assert-sigfig-equal
-           #:norm-equal #:assert-norm-equal
-	   #:number-equal #:assert-number-equal
-	   #:numerical-equal #:assert-numerical-equal
+           :float-equal :assert-float-equal
+	   :sigfig-equal :assert-sigfig-equal
+           :norm-equal :assert-norm-equal
+	   :number-equal :assert-number-equal
+	   :numerical-equal :assert-numerical-equal
 	   ;; Floating point diagnostic functions
-	   #:sequence-error #:array-error
+	   :sequence-error :array-error
 	   ;; Floating point data functions
-	   #:make-2d-list
-	   #:complex-random
-	   #:make-random-list
-	   #:make-random-2d-list
-	   #:make-random-2d-array))
+	   :make-2d-list
+	   :complex-random
+	   :make-random-list
+	   :make-random-2d-list
+	   :make-random-2d-array))
 
 (pushnew :lisp-unit common-lisp:*features*)
