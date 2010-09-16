@@ -94,7 +94,7 @@ For more information, see lisp-unit.html.
 
 |#
 
-(common-lisp:in-package #:lisp-unit)
+(in-package :lisp-unit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Globals
@@ -130,20 +130,20 @@ For more information, see lisp-unit.html.
 ;;; ASSERT macros
 
 (defmacro assert-eq (expected form &rest extras)
- (expand-assert :equal form form expected extras :test #'eq))
+  (expand-assert :equal form form expected extras :test #'eq))
 
 (defmacro assert-eql (expected form &rest extras)
- (expand-assert :equal form form expected extras :test #'eql))
+  (expand-assert :equal form form expected extras :test #'eql))
 
 (defmacro assert-equal (expected form &rest extras)
- (expand-assert :equal form form expected extras :test #'equal))
+  (expand-assert :equal form form expected extras :test #'equal))
 
 (defmacro assert-equalp (expected form &rest extras)
- (expand-assert :equal form form expected extras :test #'equalp))
+  (expand-assert :equal form form expected extras :test #'equalp))
 
 (defmacro assert-error (condition form &rest extras)
- (expand-assert :error form (expand-error-form form)
-                condition extras))
+  (expand-assert :error form (expand-error-form form)
+                 condition extras))
 
 (defmacro assert-expands (&environment env expansion form &rest extras)
   (expand-assert :macro form 
@@ -152,9 +152,9 @@ For more information, see lisp-unit.html.
 
 (defmacro assert-false (form &rest extras)
   (expand-assert :result form form nil extras))
- 
+
 (defmacro assert-equality (test expected form &rest extras)
- (expand-assert :equal form form expected extras :test test))
+  (expand-assert :equal form form expected extras :test test))
 
 (defmacro assert-prints (output form &rest extras)
   (expand-assert :output form (expand-output-form form)
@@ -165,9 +165,12 @@ For more information, see lisp-unit.html.
 
 
 (defun expand-assert (type form body expected extras &key (test #'eql))
-  `(internal-assert
-    ,type ',form #'(lambda () ,body) #'(lambda () ,expected) ,(expand-extras extras), test))
-  
+  `(internal-assert ,type ',form
+                    #'(lambda () ,body)
+                    #'(lambda () ,expected)
+                    ,(expand-extras extras)
+                    ,test))
+
 (defun expand-error-form (form)
   `(handler-case ,form
      (condition (error) error)))
@@ -185,7 +188,6 @@ For more information, see lisp-unit.html.
 (defun expand-extras (extras)
   `#'(lambda ()
        (list ,@(mapcan #'(lambda (form) (list `',form form)) extras))))
-    
 
 ;;; RUN-TESTS
 
@@ -193,18 +195,19 @@ For more information, see lisp-unit.html.
   `(let ((*package* (find-package ',package)))
      (run-tests
       ,@(mapcar #'(lambda (test) (find-symbol (symbol-name test) package))
-          tests))))
+                tests))))
 
 (defmacro run-tests (&rest names)
-  `(run-test-thunks (get-test-thunks ,(if (null names) '(get-tests *package*) `',names))))
+  `(run-test-thunks
+    (get-test-thunks ,(if (null names) '(get-tests *package*) `',names))))
 
 (defun get-test-thunks (names &optional (package *package*))
   (mapcar #'(lambda (name) (get-test-thunk name package))
-    names))
+          names))
 
 (defun get-test-thunk (name package)
   (assert (get-test-code name package) (name package)
-          "No test defined for ~S in package ~S" name package)
+    "No test defined for ~S in package ~S" name package)
   (list name (coerce `(lambda () ,@(get-test-code name)) 'function)))
 
 (defun use-debugger (&optional (flag t))
@@ -213,7 +216,7 @@ For more information, see lisp-unit.html.
 ;;; WITH-TEST-LISTENER
 (defmacro with-test-listener (listener &body body)
   `(let ((*test-listener* #',listener)) ,@body))
-  
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Public functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -234,25 +237,22 @@ For more information, see lisp-unit.html.
                     table)
            (sort l #'string< :key #'string)))))
 
-
 (defun remove-tests (names &optional (package *package*))
   (let ((table (get-package-table package)))
     (unless (null table)
       (if (null names)
           (clrhash table)
-        (dolist (name names)
-          (remhash name table))))))
+          (dolist (name names)
+            (remhash name table))))))
 
 (defun remove-all-tests (&optional (package *package*))
   (if (null package)
       (clrhash *tests*)
-    (remhash (find-package package) *tests*)))
-
+      (remhash (find-package package) *tests*)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Private functions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 
 ;;; DEFINE-TEST support
 
@@ -267,10 +267,8 @@ For more information, see lisp-unit.html.
   (if (atom form) form (cadr form)))
 
 (defun store-test-code (name code &optional (package *package*))
-  (setf (gethash name
-                 (get-package-table package :create t))
+  (setf (gethash name (get-package-table package :create t))
         code))
-
 
 ;;; ASSERTION support
 
@@ -278,13 +276,10 @@ For more information, see lisp-unit.html.
   (let* ((expected (multiple-value-list (funcall expected-thunk)))
          (actual (multiple-value-list (funcall code-thunk)))
          (passed (test-passed-p type expected actual test)))
-    
     (incf *test-count*)
     (when passed
       (incf *pass-count*))
-    
     (record-result passed type form expected actual extras)
-    
     passed))
 
 (defun record-result (passed type form expected actual extras)
@@ -294,7 +289,7 @@ For more information, see lisp-unit.html.
            *test-count* *pass-count*))
 
 (defun default-listener
-    (passed type name form expected actual extras test-count pass-count)
+       (passed type name form expected actual extras test-count pass-count)
   (declare (ignore test-count pass-count))
   (unless passed
     (show-failure type (get-failure-message type)
@@ -315,9 +310,7 @@ For more information, see lisp-unit.html.
                            (car actual))
               (car expected)))
     (:result
-     (logically-equal (car actual) (car expected)))
-    ))
-
+     (logically-equal (car actual) (car expected)))))
 
 ;;; RUN-TESTS support
 
@@ -339,19 +332,19 @@ For more information, see lisp-unit.html.
 (defun run-test-thunk (*test-name* thunk)
   (if (null thunk)
       (format t "~&    Test ~S not found" *test-name*)
-    (prog ((*test-count* 0)
-           (*pass-count* 0)
-           (error-count 0))
-      (handler-bind 
-          ((error #'(lambda (e)
-                      (let ((*print-escape* nil))
-                        (setq error-count 1)         
-                        (format t "~&    ~S: ~W" *test-name* e))
-                      (if (use-debugger-p e) e (go exit)))))
-        (funcall thunk)
-        (show-summary *test-name* *test-count* *pass-count*))
-      exit
-      (return (values *test-count* *pass-count* error-count)))))
+      (prog ((*test-count* 0)
+             (*pass-count* 0)
+             (error-count 0))
+        (handler-bind 
+            ((error #'(lambda (e)
+                        (let ((*print-escape* nil))
+                          (setq error-count 1)         
+                          (format t "~&    ~S: ~W" *test-name* e))
+                        (if (use-debugger-p e) e (go exit)))))
+          (funcall thunk)
+          (show-summary *test-name* *test-count* *pass-count*))
+        exit
+        (return (values *test-count* *pass-count* error-count)))))
 
 (defun use-debugger-p (e)
   (and *use-debugger*
@@ -365,8 +358,7 @@ For more information, see lisp-unit.html.
     (:error "~&~@[Should have signalled ~{~S~^; ~} but saw~] ~{~S~^; ~}")
     (:macro "~&Should have expanded to ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
     (:output "~&Should have printed ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-    (t "~&Expected ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-    ))
+    (t "~&Expected ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")))
 
 (defun show-failure (type msg name form expected actual extras)
   (format t "~&~@[~S: ~]~S failed: " name form)
@@ -379,13 +371,12 @@ For more information, see lisp-unit.html.
           name pass-count (- test-count pass-count) error-count))
 
 (defun collect-form-values (form values)
-  (mapcan #'(lambda (form-arg value)
-              (if (constantp form-arg)
-                  nil
+  (mapcan (lambda (form-arg value)
+            (if (constantp form-arg)
+                nil
                 (list form-arg value)))
           (cdr form)
           values))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Useful equality predicates for tests
@@ -393,14 +384,12 @@ For more information, see lisp-unit.html.
 
 ;;; (LOGICALLY-EQUAL x y) => true or false
 ;;;   Return true if x and y both false or both true
-
 (defun logically-equal (x y)
   (eql (not x) (not y)))
 
 ;;; (SET-EQUAL l1 l2 :test) => true or false
 ;;;   Return true if every element of l1 is an element of l2
 ;;;   and vice versa.
-
 (defun set-equal (l1 l2 &key (test #'equal))
   (and (listp l1)
        (listp l2)
