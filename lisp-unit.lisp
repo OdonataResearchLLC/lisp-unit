@@ -163,11 +163,10 @@ For more information, see lisp-unit.html.
 (defmacro assert-true (form &rest extras)
   (expand-assert :result form form t extras))
 
-
 (defun expand-assert (type form body expected extras &key (test #'eql))
   `(internal-assert ,type ',form
-                    #'(lambda () ,body)
-                    #'(lambda () ,expected)
+                    (lambda () ,body)
+                    (lambda () ,expected)
                     ,(expand-extras extras)
                     ,test))
 
@@ -186,15 +185,14 @@ For more information, see lisp-unit.html.
   `(macroexpand-1 ',form ,env))
 
 (defun expand-extras (extras)
-  `#'(lambda ()
-       (list ,@(mapcan #'(lambda (form) (list `',form form)) extras))))
+  `(lambda () (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
 ;;; RUN-TESTS
 
 (defmacro run-all-tests (package &rest tests)
   `(let ((*package* (find-package ',package)))
      (run-tests
-      ,@(mapcar #'(lambda (test) (find-symbol (symbol-name test) package))
+      ,@(mapcar (lambda (test) (find-symbol (symbol-name test) package))
                 tests))))
 
 (defmacro run-tests (&rest names)
@@ -202,7 +200,7 @@ For more information, see lisp-unit.html.
     (get-test-thunks ,(if (null names) '(get-tests *package*) `',names))))
 
 (defun get-test-thunks (names &optional (package *package*))
-  (mapcar #'(lambda (name) (get-test-thunk name package))
+  (mapcar (lambda (name) (get-test-thunk name package))
           names))
 
 (defun get-test-thunk (name package)
@@ -231,9 +229,9 @@ For more information, see lisp-unit.html.
         (table (get-package-table package)))
     (cond ((null table) nil)
           (t
-           (maphash #'(lambda (key val)
-                        (declare (ignore val))
-                        (push key l))
+           (maphash (lambda (key val)
+                      (declare (ignore val))
+                      (push key l))
                     table)
            (sort l #'string< :key #'string)))))
 
@@ -336,11 +334,11 @@ For more information, see lisp-unit.html.
              (*pass-count* 0)
              (error-count 0))
         (handler-bind 
-            ((error #'(lambda (e)
-                        (let ((*print-escape* nil))
-                          (setq error-count 1)         
-                          (format t "~&    ~S: ~W" *test-name* e))
-                        (if (use-debugger-p e) e (go exit)))))
+            ((error (lambda (e)
+                      (let ((*print-escape* nil))
+                        (setq error-count 1)         
+                        (format t "~&    ~S: ~W" *test-name* e))
+                      (if (use-debugger-p e) e (go exit)))))
           (funcall thunk)
           (show-summary *test-name* *test-count* *pass-count*))
         exit
