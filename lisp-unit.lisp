@@ -130,40 +130,40 @@ For more information, see lisp-unit.html.
 ;;; ASSERT macros
 
 (defmacro assert-eq (expected form &rest extras)
-  (expand-assert :equal form form expected extras :test '#'eq))
+  `(expand-assert :equal ,form ,form ,expected ,extras :test #'eq))
 
 (defmacro assert-eql (expected form &rest extras)
-  (expand-assert :equal form form expected extras :test '#'eql))
+  `(expand-assert :equal ,form ,form ,expected ,extras :test #'eql))
 
 (defmacro assert-equal (expected form &rest extras)
-  (expand-assert :equal form form expected extras :test '#'equal))
+  `(expand-assert :equal ,form ,form ,expected ,extras :test #'equal))
 
 (defmacro assert-equalp (expected form &rest extras)
-  (expand-assert :equal form form expected extras :test '#'equalp))
+  `(expand-assert :equal ,form ,form ,expected ,extras :test #'equalp))
 
 (defmacro assert-error (condition form &rest extras)
-  (expand-assert :error form (expand-error-form form)
-                 condition extras))
+  `(expand-assert :error ,form ,(expand-error-form form)
+                  ,condition ,extras))
 
 (defmacro assert-expands (&environment env expansion form &rest extras)
-  (expand-assert :macro form 
-                 (expand-macro-form form #+lispworks nil #-lispworks env)
-                 expansion extras))
+  `(expand-assert :macro ,form 
+                  ,(expand-macro-form form #+lispworks nil #-lispworks env)
+                  ,expansion ,extras))
 
 (defmacro assert-false (form &rest extras)
-  (expand-assert :result form form nil extras))
+  `(expand-assert :result ,form ,form nil ,extras))
 
 (defmacro assert-equality (test expected form &rest extras)
-  (expand-assert :equal form form expected extras :test test))
+  `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
 
 (defmacro assert-prints (output form &rest extras)
-  (expand-assert :output form (expand-output-form form)
-                 output extras))
+  `(expand-assert :output ,form ,(expand-output-form form)
+                  ,output ,extras))
 
 (defmacro assert-true (form &rest extras)
-  (expand-assert :result form form t extras))
+  `(expand-assert :result ,form ,form t ,extras))
 
-(defun expand-assert (type form body expected extras &key (test '#'eql))
+(defmacro expand-assert (type form body expected extras &key (test '#'eql))
   `(internal-assert ,type ',form
                     (lambda () ,body)
                     (lambda () ,expected)

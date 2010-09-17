@@ -87,4 +87,4 @@ equal."
                  :displaced-to data2))))
 
 (defmacro assert-rational-equal (expected form &rest extras)
-  (expand-assert :equal form form expected extras :test '#'rational-equal))
+  `(expand-assert :equal ,form ,form ,expected ,extras :test #'rational-equal))
