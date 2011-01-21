@@ -138,4 +138,4 @@
   (loop for (assertion macro-form expansion)
         in *fundamental-assertion-expansions*
         collect
-        (list assertion (equal (macroexpand macro-form) expansion))))
+        (list assertion (equal (macroexpand-1 macro-form) expansion))))
