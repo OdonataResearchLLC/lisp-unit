@@ -2,7 +2,7 @@
 
  LISP-UNIT Internal Tests
 
- Copyright (c) 2010, Thomas M. Hermann
+ Copyright (c) 2010-2011, Thomas M. Hermann
  All rights reserved.
 
  Redistribution and  use  in  source  and  binary  forms, with or without
@@ -86,8 +86,9 @@
      (INTERNAL-ASSERT :MACRO
                       (QUOTE FORM)
                       (LAMBDA NIL (MACROEXPAND-1 (QUOTE FORM) NIL))
-                      (LAMBDA NIL EXPANSION) (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                                               (QUOTE EXTRA2) EXTRA2))
+                      (LAMBDA NIL EXPANSION)
+                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
+                                        (QUOTE EXTRA2) EXTRA2))
                       (FUNCTION EQL)))
     ("ASSERT-FALSE"
      (assert-false form extra1 extra2)
