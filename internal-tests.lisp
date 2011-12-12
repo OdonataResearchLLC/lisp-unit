@@ -113,11 +113,11 @@
      (INTERNAL-ASSERT :OUTPUT
                       (QUOTE FORM)
                       (LAMBDA NIL
-                        (LET* ((#:G943 (MAKE-STRING-OUTPUT-STREAM))
+                        (LET* ((#:G1 (MAKE-STRING-OUTPUT-STREAM))
                                (*STANDARD-OUTPUT* (MAKE-BROADCAST-STREAM
-                                                   *STANDARD-OUTPUT* #:G943)))
+                                                   *STANDARD-OUTPUT* #:G1)))
                           FORM
-                          (GET-OUTPUT-STREAM-STRING #:G943)))
+                          (GET-OUTPUT-STREAM-STRING #:G1)))
                       (LAMBDA NIL OUTPUT)
                       (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
                                         (QUOTE EXTRA2) EXTRA2))
@@ -133,9 +133,27 @@
                       (FUNCTION EQL))))
   "The correct expansions for the fundamental assertions.")
 
+(defun expansion-equal (form1 form2)
+  "Descend into the forms checking for equality."
+  (let ((item1 (first form1))
+        (item2 (first form2)))
+    (cond
+     ((and (null item1) (null item2)))
+     ((and (listp item1) (listp item2))
+      (and (expansion-equal item1 item2)
+           (expansion-equal (rest form1) (rest form2))))
+     ((and (symbolp item1) (symbolp item2))
+      (and (string= (symbol-name item1) (symbol-name item2))
+           (expansion-equal (rest form1) (rest form2))))
+     (t nil))))
+
 (defun test-fundamental-assertions ()
   "Test each fundamental assertion and report the results."
   (loop for (assertion macro-form expansion)
         in *fundamental-assertion-expansions*
+        as *gensym-counter* = 1
         collect
-        (list assertion (equal (macroexpand-1 macro-form) expansion))))
+        (list
+         assertion
+         (expansion-equal
+          (macroexpand macro-form) expansion))))
