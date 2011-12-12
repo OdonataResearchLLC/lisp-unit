@@ -94,6 +94,25 @@ For more information, see lisp-unit.html.
 
 |#
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Packages
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(in-package :cl-user)
+
+(defpackage :lisp-unit
+  (:use :common-lisp)
+  (:export
+   :define-test :run-all-tests :run-tests
+   :assert-eq :assert-eql :assert-equal :assert-equalp
+   :assert-error :assert-expands :assert-false
+   :assert-equality :assert-prints :assert-true
+   :get-test-code :get-tests
+   :remove-all-tests :remove-tests
+   :logically-equal :set-equal
+   :use-debugger
+   :with-test-listener))
+
 (in-package :lisp-unit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -393,3 +412,5 @@ For more information, see lisp-unit.html.
        (listp l2)
        (subsetp l1 l2 :test test)
        (subsetp l2 l1 :test test)))
+
+(pushnew :lisp-unit common-lisp:*features*)

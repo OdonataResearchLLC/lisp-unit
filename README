@@ -7,3 +7,17 @@ testers. More recent packages in Lisp and other languages have been
 inspired by JUnit for Java.
 
 Documentation is located in the documentation directory.
+
+Version 1 Tasks
+
+(0.6.0) Single-file lisp-unit.
+(0.7.0) Internal testing.
+(0.8.0) Refined internal test data structures.
+(0.9.0) Improved test report tools.
+(1.0.0) Test Anything Protocol(TAP) support.
+
+Future Features
+
+- Fixtures
+- Test Suites
+- Benchmarking tools

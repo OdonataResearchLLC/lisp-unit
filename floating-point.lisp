@@ -3,7 +3,7 @@
 
   Floating tests and assertions for LISP-UNIT
 
-  Copyright (c) 2009-2010, Thomas M. Hermann
+  Copyright (c) 2009-2011, Thomas M. Hermann
 
   Permission is hereby granted, free of charge, to any person obtaining 
   a copy of this software and associated documentation files (the "Software"), 
@@ -32,12 +32,28 @@
 
 (in-package :lisp-unit)
 
-(defparameter *measure* 1)
+;;; Symbols exported from the floating point extension
 
-(defparameter *epsilon* nil
+(export
+ '(*measure* *epsilon* *significant-figures* ; Global variables
+   ;; Functions
+   default-epsilon relative-error
+   sumsq sump norm relative-error-norm
+   ;; Predicates and assertions
+   float-equal assert-float-equal
+   sigfig-equal assert-sigfig-equal
+   norm-equal assert-norm-equal
+   number-equal assert-number-equal
+   numerical-equal assert-numerical-equal))
+
+;;; Floating point extensions
+
+(defvar *measure* 1)
+
+(defvar *epsilon* nil
   "Set the error epsilon if the defaults are not acceptable.")
 
-(defparameter *significant-figures* 4
+(defvar *significant-figures* 4
   "Default to 4 significant figures.")
 
 (defgeneric default-epsilon (value)

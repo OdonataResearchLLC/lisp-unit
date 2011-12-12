@@ -3,7 +3,7 @@
 
   Rational tests and assertions for LISP-UNIT
 
-  Copyright (c) 2009-2010, Thomas M. Hermann
+  Copyright (c) 2009-2011, Thomas M. Hermann
 
   Permission is hereby granted, free of charge, to any person obtaining 
   a copy of this software and associated documentation files (the "Software"), 
@@ -26,6 +26,12 @@
 |#
 
 (in-package :lisp-unit)
+
+;;; Symbols exported from the rational extension
+
+(export '(rational-equal assert-rational-equal))
+
+;;; Rational predicates and assertions
 
 (defgeneric rational-equal (data1 data2)
   (:documentation
