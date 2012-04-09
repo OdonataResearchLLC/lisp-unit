@@ -151,7 +151,7 @@
   "Test each fundamental assertion and report the results."
   (loop for (assertion macro-form expansion)
         in *fundamental-assertion-expansions*
-        as *gensym-counter* = 1
+        as *gensym-counter* of-type number = 1
         collect
         (list
          assertion
