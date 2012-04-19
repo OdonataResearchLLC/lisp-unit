@@ -93,6 +93,21 @@
                       (LAMBDA NIL EXPANSION)
                       (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
                                         (QUOTE EXTRA2) EXTRA2))
+                      (FUNCTION EQL)))
+    ("EXPAND-ASSERTS-PRINT"
+     (expand-assert
+      :output form (expand-output-form form) output (extra1 extra2))
+     (INTERNAL-ASSERT :OUTPUT
+                      (QUOTE FORM)
+                      (LAMBDA NIL
+                        (LET* ((#:G1 (MAKE-STRING-OUTPUT-STREAM))
+                               (*STANDARD-OUTPUT* (MAKE-BROADCAST-STREAM
+                                                   *STANDARD-OUTPUT* #:G1)))
+                          FORM
+                          (GET-OUTPUT-STREAM-STRING #:G1)))
+                      (LAMBDA NIL OUTPUT)
+                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
+                                        (QUOTE EXTRA2) EXTRA2))
                       (FUNCTION EQL))))
   "The correct expansions for the expand-assert macro.")
 
