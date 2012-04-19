@@ -72,13 +72,25 @@
                       (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
                                         (QUOTE EXTRA2) EXTRA2))
                       (FUNCTION EQ)))
-    ("EXPAND-ASSERT-EXPAND-ERROR"
+    ("EXPAND-ASSERT-ERROR"
      (expand-assert
       :error form (expand-error-form form) condition (extra1 extra2))
      (INTERNAL-ASSERT :ERROR
                       (QUOTE FORM)
                       (LAMBDA NIL (HANDLER-CASE FORM (CONDITION (ERROR) ERROR)))
                       (LAMBDA NIL (QUOTE CONDITION))
+                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
+                                        (QUOTE EXTRA2) EXTRA2))
+                      (FUNCTION EQL)))
+    ("EXPAND-ASSERT-MACRO"
+     (expand-assert
+      :macro form
+      (expand-macro-form form #+lispworks nil #-lispworks env)
+      expansion (extra1 extra2))
+     (INTERNAL-ASSERT :MACRO
+                      (QUOTE FORM)
+                      (LAMBDA NIL (MACROEXPAND-1 (QUOTE FORM) NIL))
+                      (LAMBDA NIL EXPANSION)
                       (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
                                         (QUOTE EXTRA2) EXTRA2))
                       (FUNCTION EQL))))
