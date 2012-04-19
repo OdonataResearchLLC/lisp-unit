@@ -2,7 +2,7 @@
 
  LISP-UNIT Internal Tests
 
- Copyright (c) 2010-2011, Thomas M. Hermann
+ Copyright (c) 2010-2012, Thomas M. Hermann
  All rights reserved.
 
  Redistribution and  use  in  source  and  binary  forms, with or without
@@ -34,6 +34,55 @@
 |#
 
 (in-package :lisp-unit)
+
+;;; Internal utility functions
+
+(defun expansion-equal (form1 form2)
+  "Descend into the forms checking for equality."
+  (let ((item1 (first form1))
+        (item2 (first form2)))
+    (cond
+     ((and (null item1) (null item2)))
+     ((and (listp item1) (listp item2))
+      (and (expansion-equal item1 item2)
+           (expansion-equal (rest form1) (rest form2))))
+     ((and (symbolp item1) (symbolp item2))
+      (and (string= (symbol-name item1) (symbol-name item2))
+           (expansion-equal (rest form1) (rest form2))))
+     (t nil))))
+
+(defun test-macro-expansions (expansions)
+  "Test each fundamental assertion and report the results."
+  (loop for (assertion macro-form expansion) in expansions
+        as *gensym-counter* of-type number = 1
+        collect
+        (list
+         assertion
+         (expansion-equal
+          (macroexpand macro-form) expansion))))
+
+(defvar *expand-assert-expansions*
+  '(("EXPAND-ASSERT-BASIC"
+     (expand-assert
+      :equal form form expected (extra1 extra2) :test #'eq)
+     (INTERNAL-ASSERT :EQUAL
+                      (QUOTE FORM)
+                      (LAMBDA NIL FORM)
+                      (LAMBDA NIL EXPECTED)
+                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
+                                        (QUOTE EXTRA2) EXTRA2))
+                      (FUNCTION EQ)))
+    ("EXPAND-ASSERT-EXPAND-ERROR"
+     (expand-assert
+      :error form (expand-error-form form) condition (extra1 extra2))
+     (INTERNAL-ASSERT :ERROR
+                      (QUOTE FORM)
+                      (LAMBDA NIL (HANDLER-CASE FORM (CONDITION (ERROR) ERROR)))
+                      (LAMBDA NIL (QUOTE CONDITION))
+                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
+                                        (QUOTE EXTRA2) EXTRA2))
+                      (FUNCTION EQL))))
+  "The correct expansions for the expand-assert macro.")
 
 (defvar *fundamental-assertion-expansions*
   '(("ASSERT-EQ"
@@ -132,28 +181,3 @@
                                         (QUOTE EXTRA2) EXTRA2))
                       (FUNCTION EQL))))
   "The correct expansions for the fundamental assertions.")
-
-(defun expansion-equal (form1 form2)
-  "Descend into the forms checking for equality."
-  (let ((item1 (first form1))
-        (item2 (first form2)))
-    (cond
-     ((and (null item1) (null item2)))
-     ((and (listp item1) (listp item2))
-      (and (expansion-equal item1 item2)
-           (expansion-equal (rest form1) (rest form2))))
-     ((and (symbolp item1) (symbolp item2))
-      (and (string= (symbol-name item1) (symbol-name item2))
-           (expansion-equal (rest form1) (rest form2))))
-     (t nil))))
-
-(defun test-fundamental-assertions ()
-  "Test each fundamental assertion and report the results."
-  (loop for (assertion macro-form expansion)
-        in *fundamental-assertion-expansions*
-        as *gensym-counter* of-type number = 1
-        collect
-        (list
-         assertion
-         (expansion-equal
-          (macroexpand macro-form) expansion))))
