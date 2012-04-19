@@ -102,16 +102,21 @@ For more information, see lisp-unit.html.
 
 (defpackage :lisp-unit
   (:use :common-lisp)
+  ;; Functions for managing tests
   (:export
-   :define-test :run-all-tests :run-tests
-   :assert-eq :assert-eql :assert-equal :assert-equalp
-   :assert-error :assert-expands :assert-false
-   :assert-equality :assert-prints :assert-true
-   :get-test-code :get-tests
-   :remove-all-tests :remove-tests
-   :logically-equal :set-equal
+   :define-test :get-tests :get-test-code
+   :remove-tests :remove-all-tests
+   :run-all-tests :run-tests
    :use-debugger
-   :with-test-listener))
+   :with-test-listener)
+  ;; Forms for assertions
+  (:export
+   :assert-eq :assert-eql :assert-equal :assert-equalp
+   :assert-equality :assert-prints :assert-expands
+   :assert-true :assert-false :assert-error)
+  ;; Utility predicates
+  (:export
+   :logically-equal :set-equal))
 
 (in-package :lisp-unit)
 
