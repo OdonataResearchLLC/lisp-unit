@@ -59,7 +59,7 @@
         (list
          assertion
          (expansion-equal
-          (macroexpand macro-form) expansion))))
+          (macroexpand-1 macro-form) expansion))))
 
 (defvar *expand-assert-expansions*
   '(("EXPAND-ASSERT-BASIC"
@@ -114,97 +114,46 @@
 (defvar *fundamental-assertion-expansions*
   '(("ASSERT-EQ"
      (assert-eq expected form extra1 extra2)
-     (INTERNAL-ASSERT :EQUAL
-                      (QUOTE FORM)
-                      (LAMBDA NIL FORM)
-                      (LAMBDA NIL EXPECTED)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQ)))
+     (EXPAND-ASSERT
+      :EQUAL FORM FORM EXPECTED (EXTRA1 EXTRA2) :TEST (FUNCTION EQ)))
     ("ASSERT-EQL"
      (assert-eql expected form extra1 extra2)
-     (INTERNAL-ASSERT :EQUAL
-                      (QUOTE FORM)
-                      (LAMBDA NIL FORM)
-                      (LAMBDA NIL EXPECTED)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQL)))
+     (EXPAND-ASSERT
+      :EQUAL FORM FORM EXPECTED (EXTRA1 EXTRA2) :TEST (FUNCTION EQL)))
     ("ASSERT-EQUAL"
      (assert-equal expected form extra1 extra2)
-     (INTERNAL-ASSERT :EQUAL
-                      (QUOTE FORM)
-                      (LAMBDA NIL FORM)
-                      (LAMBDA NIL EXPECTED)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQUAL)))
+     (EXPAND-ASSERT
+      :EQUAL FORM FORM EXPECTED (EXTRA1 EXTRA2) :TEST (FUNCTION EQUAL)))
     ("ASSERT-EQUALP"
      (assert-equalp expected form extra1 extra2)
-     (INTERNAL-ASSERT :EQUAL
-                      (QUOTE FORM)
-                      (LAMBDA NIL FORM)
-                      (LAMBDA NIL EXPECTED)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQUALP)))
+     (EXPAND-ASSERT
+      :EQUAL FORM FORM EXPECTED (EXTRA1 EXTRA2) :TEST (FUNCTION EQUALP)))
     ("ASSERT-ERROR"
      (assert-error 'condition form extra1 extra2)
-     (INTERNAL-ASSERT :ERROR
-                      (QUOTE FORM)
-                      (LAMBDA NIL (HANDLER-CASE FORM (CONDITION (ERROR) ERROR)))
-                      (LAMBDA NIL (QUOTE CONDITION))
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQL)))
+     (EXPAND-ASSERT
+      :ERROR FORM (EXPAND-ERROR-FORM FORM) 'CONDITION (EXTRA1 EXTRA2)))
     ("ASSERT-EXPANDS"
      (assert-expands expansion form extra1 extra2)
-     (INTERNAL-ASSERT :MACRO
-                      (QUOTE FORM)
-                      (LAMBDA NIL (MACROEXPAND-1 (QUOTE FORM) NIL))
-                      (LAMBDA NIL EXPANSION)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQL)))
+     (EXPAND-ASSERT
+      :MACRO FORM (MACROEXPAND-1 'FORM NIL) EXPANSION (EXTRA1 EXTRA2)))
     ("ASSERT-FALSE"
      (assert-false form extra1 extra2)
-     (INTERNAL-ASSERT :RESULT
-                      (QUOTE FORM)
-                      (LAMBDA NIL FORM)
-                      (LAMBDA NIL NIL)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQL)))
+     (EXPAND-ASSERT :RESULT FORM FORM NIL (EXTRA1 EXTRA2)))
     ("ASSERT-EQUALITY"
      (assert-equality test expected form extra1 extra2)
-     (INTERNAL-ASSERT :EQUAL
-                      (QUOTE FORM)
-                      (LAMBDA NIL FORM)
-                      (LAMBDA NIL EXPECTED)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      TEST))
+     (EXPAND-ASSERT
+      :EQUAL FORM FORM EXPECTED (EXTRA1 EXTRA2) :TEST TEST))
     ("ASSERT-PRINTS"
      (assert-prints output form extra1 extra2)
-     (INTERNAL-ASSERT :OUTPUT
-                      (QUOTE FORM)
-                      (LAMBDA NIL
-                        (LET* ((#:G1 (MAKE-STRING-OUTPUT-STREAM))
-                               (*STANDARD-OUTPUT* (MAKE-BROADCAST-STREAM
-                                                   *STANDARD-OUTPUT* #:G1)))
-                          FORM
-                          (GET-OUTPUT-STREAM-STRING #:G1)))
-                      (LAMBDA NIL OUTPUT)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQL)))
+     (EXPAND-ASSERT
+      :OUTPUT FORM
+      (LET* ((#:G1 (MAKE-STRING-OUTPUT-STREAM))
+             (*STANDARD-OUTPUT*
+              (MAKE-BROADCAST-STREAM *STANDARD-OUTPUT* #:G1)))
+        FORM
+        (GET-OUTPUT-STREAM-STRING #:G1))
+      OUTPUT (EXTRA1 EXTRA2)))
     ("ASSERT-TRUE"
      (assert-true form extra1 extra2)
-     (INTERNAL-ASSERT :RESULT
-                      (QUOTE FORM)
-                      (LAMBDA NIL FORM)
-                      (LAMBDA NIL T)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
-                      (FUNCTION EQL))))
+     (EXPAND-ASSERT :RESULT FORM FORM T (EXTRA1 EXTRA2))))
   "The correct expansions for the fundamental assertions.")
