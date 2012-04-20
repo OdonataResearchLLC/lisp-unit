@@ -34,17 +34,32 @@
 
 ;;; Symbols exported from the floating point extension
 
+;;; Global variables
 (export
- '(*measure* *epsilon* *significant-figures* ; Global variables
-   ;; Functions
-   default-epsilon relative-error
-   sumsq sump norm relative-error-norm
-   ;; Predicates and assertions
-   float-equal assert-float-equal
+ '(*measure* *epsilon* *significant-figures*))
+
+;;; Functions
+(export
+ '(default-epsilon
+   sumsq sump norm
+   relative-error relative-error-norm
+   array-error))
+
+;;; Predicates and assertions
+(export
+ '(float-equal assert-float-equal
    sigfig-equal assert-sigfig-equal
    norm-equal assert-norm-equal
    number-equal assert-number-equal
    numerical-equal assert-numerical-equal))
+
+;;; Utilities
+(export
+ '(complex-random
+   make-2d-list
+   make-random-list
+   make-random-2d-list
+   make-random-2d-array))
 
 ;;; Floating point extensions
 
