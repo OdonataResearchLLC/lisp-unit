@@ -166,7 +166,7 @@ For more information, see lisp-unit.html.
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'equalp))
 
 (defmacro assert-error (condition form &rest extras)
-  `(expand-assert :error ,form ,(expand-error-form form)
+  `(expand-assert :error ,form (expand-error-form ,form)
                   ,condition ,extras))
 
 (defmacro assert-expands (&environment env expansion form &rest extras)
@@ -194,7 +194,7 @@ For more information, see lisp-unit.html.
                     ,(expand-extras extras)
                     ,test))
 
-(defun expand-error-form (form)
+(defmacro expand-error-form (form)
   `(handler-case ,form
      (condition (error) error)))
 
