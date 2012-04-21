@@ -37,29 +37,29 @@
 
 ;;; Internal utility functions
 
-(defun expansion-equal (form1 form2)
+(defun %expansion-equal (form1 form2)
   "Descend into the forms checking for equality."
   (let ((item1 (first form1))
         (item2 (first form2)))
     (cond
      ((and (null item1) (null item2)))
      ((and (listp item1) (listp item2))
-      (and (expansion-equal item1 item2)
-           (expansion-equal (rest form1) (rest form2))))
+      (and (%expansion-equal item1 item2)
+           (%expansion-equal (rest form1) (rest form2))))
      ((and (symbolp item1) (symbolp item2))
       (and (string= (symbol-name item1) (symbol-name item2))
-           (expansion-equal (rest form1) (rest form2))))
+           (%expansion-equal (rest form1) (rest form2))))
      (t nil))))
+
+(defun expansion-equal (macro-form expansion)
+  "MACROEXPAND-1 the macro-form and compare with the expansion."
+  (let ((*gensym-counter* 1))
+    (%expansion-equal (macroexpand-1 macro-form) expansion)))
 
 (defun test-macro-expansions (expansions)
   "Test each fundamental assertion and report the results."
-  (loop for (assertion macro-form expansion) in expansions
-        as *gensym-counter* of-type number = 1
-        collect
-        (list
-         assertion
-         (expansion-equal
-          (macroexpand-1 macro-form) expansion))))
+  (loop for (assertion macro-form expansion) in expansions collect
+        (list assertion (expansion-equal macro-form expansion))))
 
 (defvar *expand-assert-expansions*
   '(("EXPAND-ASSERT-BASIC"
