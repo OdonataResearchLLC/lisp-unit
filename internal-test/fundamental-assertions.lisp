@@ -146,13 +146,7 @@
     ("ASSERT-PRINTS"
      (assert-prints output form extra1 extra2)
      (EXPAND-ASSERT
-      :OUTPUT FORM
-      (LET* ((#:G1 (MAKE-STRING-OUTPUT-STREAM))
-             (*STANDARD-OUTPUT*
-              (MAKE-BROADCAST-STREAM *STANDARD-OUTPUT* #:G1)))
-        FORM
-        (GET-OUTPUT-STREAM-STRING #:G1))
-      OUTPUT (EXTRA1 EXTRA2)))
+      :OUTPUT FORM (expand-output-form form) OUTPUT (EXTRA1 EXTRA2)))
     ("ASSERT-TRUE"
      (assert-true form extra1 extra2)
      (EXPAND-ASSERT :RESULT FORM FORM T (EXTRA1 EXTRA2))))

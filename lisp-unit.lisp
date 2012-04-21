@@ -181,7 +181,7 @@ For more information, see lisp-unit.html.
   `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
 
 (defmacro assert-prints (output form &rest extras)
-  `(expand-assert :output ,form ,(expand-output-form form)
+  `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
 (defmacro assert-true (form &rest extras)
@@ -198,7 +198,7 @@ For more information, see lisp-unit.html.
   `(handler-case ,form
      (condition (error) error)))
 
-(defun expand-output-form (form)
+(defmacro expand-output-form (form)
   (let ((out (gensym)))
     `(let* ((,out (make-string-output-stream))
             (*standard-output* (make-broadcast-stream *standard-output* ,out)))
