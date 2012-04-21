@@ -85,7 +85,7 @@
     ("EXPAND-ASSERT-MACRO"
      (expand-assert
       :macro form
-      (expand-macro-form form #+lispworks nil #-lispworks env)
+      (expand-macro-form form nil)
       expansion (extra1 extra2))
      (INTERNAL-ASSERT :MACRO
                       (QUOTE FORM)
@@ -135,7 +135,7 @@
     ("ASSERT-EXPANDS"
      (assert-expands expansion form extra1 extra2)
      (EXPAND-ASSERT
-      :MACRO FORM (MACROEXPAND-1 'FORM NIL) EXPANSION (EXTRA1 EXTRA2)))
+      :MACRO FORM (EXPAND-MACRO-FORM FORM NIL) EXPANSION (EXTRA1 EXTRA2)))
     ("ASSERT-FALSE"
      (assert-false form extra1 extra2)
      (EXPAND-ASSERT :RESULT FORM FORM NIL (EXTRA1 EXTRA2)))

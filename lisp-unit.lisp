@@ -169,9 +169,9 @@ For more information, see lisp-unit.html.
   `(expand-assert :error ,form (expand-error-form ,form)
                   ,condition ,extras))
 
-(defmacro assert-expands (&environment env expansion form &rest extras)
+(defmacro assert-expands (expansion form &rest extras)
   `(expand-assert :macro ,form 
-                  ,(expand-macro-form form #+lispworks nil #-lispworks env)
+                  (expand-macro-form ,form nil)
                   ,expansion ,extras))
 
 (defmacro assert-false (form &rest extras)
@@ -205,7 +205,7 @@ For more information, see lisp-unit.html.
        ,form
        (get-output-stream-string ,out))))
 
-(defun expand-macro-form (form env)
+(defmacro expand-macro-form (form env)
   `(macroexpand-1 ',form ,env))
 
 (defun expand-extras (extras)
