@@ -191,7 +191,7 @@ For more information, see lisp-unit.html.
   `(internal-assert ,type ',form
                     (lambda () ,body)
                     (lambda () ,expected)
-                    ,(expand-extras extras)
+                    (expand-extras ,extras)
                     ,test))
 
 (defmacro expand-error-form (form)
@@ -208,7 +208,7 @@ For more information, see lisp-unit.html.
 (defmacro expand-macro-form (form env)
   `(macroexpand-1 ',form ,env))
 
-(defun expand-extras (extras)
+(defmacro expand-extras (extras)
   `(lambda () (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
 ;;; RUN-TESTS

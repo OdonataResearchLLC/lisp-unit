@@ -69,8 +69,7 @@
                       (QUOTE FORM)
                       (LAMBDA NIL FORM)
                       (LAMBDA NIL EXPECTED)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
+                      (EXPAND-EXTRAS (EXTRA1 EXTRA2))
                       (FUNCTION EQ)))
     ("EXPAND-ASSERT-ERROR"
      (expand-assert
@@ -79,8 +78,7 @@
                       (QUOTE FORM)
                       (LAMBDA NIL (HANDLER-CASE FORM (CONDITION (ERROR) ERROR)))
                       (LAMBDA NIL (QUOTE CONDITION))
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
+                      (EXPAND-EXTRAS (EXTRA1 EXTRA2))
                       (FUNCTION EQL)))
     ("EXPAND-ASSERT-MACRO"
      (expand-assert
@@ -91,8 +89,7 @@
                       (QUOTE FORM)
                       (LAMBDA NIL (MACROEXPAND-1 (QUOTE FORM) NIL))
                       (LAMBDA NIL EXPANSION)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
+                      (EXPAND-EXTRAS (EXTRA1 EXTRA2))
                       (FUNCTION EQL)))
     ("EXPAND-ASSERTS-PRINT"
      (expand-assert
@@ -106,10 +103,28 @@
                           FORM
                           (GET-OUTPUT-STREAM-STRING #:G1)))
                       (LAMBDA NIL OUTPUT)
-                      (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1
-                                        (QUOTE EXTRA2) EXTRA2))
+                      (EXPAND-EXTRAS (EXTRA1 EXTRA2))
                       (FUNCTION EQL))))
   "The correct expansions for the expand-assert macro.")
+
+(defvar *expansion-macros*
+  '(("EXPAND-ERROR-FORM"
+     (expand-error-form form)
+     (HANDLER-CASE FORM (CONDITION (ERROR) ERROR)))
+    ("EXPAND-OUTPUT-FORM"
+     (expand-output-form form)
+     (LET* ((#:G1 (MAKE-STRING-OUTPUT-STREAM))
+            (*STANDARD-OUTPUT*
+             (MAKE-BROADCAST-STREAM *STANDARD-OUTPUT* #:G1)))
+       FORM
+       (GET-OUTPUT-STREAM-STRING #:G1)))
+    ("EXPAND-MACRO-FORM"
+     (expand-macro-form form env)
+     (MACROEXPAND-1 'FORM ENV))
+    ("EXPAND-EXTRAS"
+     (expand-extras (extra1 extra2))
+     (LAMBDA NIL (LIST (QUOTE EXTRA1) EXTRA1 (QUOTE EXTRA2) EXTRA2))))
+  "The correct expansions for macros that expand forms.")
 
 (defvar *fundamental-assertion-expansions*
   '(("ASSERT-EQ"
