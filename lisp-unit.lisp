@@ -104,9 +104,10 @@ For more information, see lisp-unit.html.
   (:use :common-lisp)
   ;; Functions for managing tests
   (:export
-   :define-test :get-tests :get-test-code
+   :define-test
+   :get-tests :get-test-code
    :remove-tests :remove-all-tests
-   :run-all-tests :run-tests
+   :run-tests :run-all-tests
    :use-debugger
    :with-test-listener)
   ;; Forms for assertions
@@ -154,40 +155,51 @@ For more information, see lisp-unit.html.
 ;;; ASSERT macros
 
 (defmacro assert-eq (expected form &rest extras)
+  "Assert whether expected and form are EQ."
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'eq))
 
 (defmacro assert-eql (expected form &rest extras)
+  "Assert whether expected and form are EQL."
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'eql))
 
 (defmacro assert-equal (expected form &rest extras)
+  "Assert whether expected and form are EQUAL."
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'equal))
 
 (defmacro assert-equalp (expected form &rest extras)
+  "Assert whether expected and form are EQUALP."
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'equalp))
 
 (defmacro assert-error (condition form &rest extras)
+  "Assert whether form signals condition."
   `(expand-assert :error ,form (expand-error-form ,form)
                   ,condition ,extras))
 
 (defmacro assert-expands (expansion form &rest extras)
+  "Assert whether form expands to expansion."
   `(expand-assert :macro ,form 
                   (expand-macro-form ,form nil)
                   ,expansion ,extras))
 
 (defmacro assert-false (form &rest extras)
+  "Assert whether the form is false."
   `(expand-assert :result ,form ,form nil ,extras))
 
 (defmacro assert-equality (test expected form &rest extras)
+  "Assert whether expected and form are equal according to test."
   `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
 
 (defmacro assert-prints (output form &rest extras)
+  "Assert whether printing the form generates the output."
   `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
 (defmacro assert-true (form &rest extras)
+  "Assert whether the form is true."
   `(expand-assert :result ,form ,form t ,extras))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
+  "Expand the assertion to the internal format."
   `(internal-assert ,type ',form
                     (lambda () ,body)
                     (lambda () ,expected)
@@ -195,37 +207,44 @@ For more information, see lisp-unit.html.
                     ,test))
 
 (defmacro expand-error-form (form)
+  "Wrap the error assertion in HANDLER-CASE."
   `(handler-case ,form
      (condition (error) error)))
 
 (defmacro expand-output-form (form)
+  "Capture the output of the form in a string."
   (let ((out (gensym)))
     `(let* ((,out (make-string-output-stream))
-            (*standard-output* (make-broadcast-stream *standard-output* ,out)))
+            (*standard-output*
+             (make-broadcast-stream *standard-output* ,out)))
        ,form
        (get-output-stream-string ,out))))
 
 (defmacro expand-macro-form (form env)
+  "Expand the macro form once."
   `(macroexpand-1 ',form ,env))
 
 (defmacro expand-extras (extras)
-  `(lambda () (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
+  "Expand extra forms."
+  `(lambda ()
+     (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
 ;;; RUN-TESTS
 
-(defmacro run-all-tests (package &rest tests)
-  `(let ((*package* (find-package ',package)))
-     (run-tests
-      ,@(mapcar (lambda (test) (find-symbol (symbol-name test) package))
-                tests))))
+(defun run-all-tests (&optional (package *package*))
+  "Run all of the tests in package."
+  (run-tests :all package))
 
-(defmacro run-tests (&rest names)
-  `(run-test-thunks
-    (get-test-thunks ,(if (null names) '(get-tests *package*) `',names))))
+(defun run-tests (names &optional (package *package*))
+  "Run the specified tests in package."
+  (run-test-thunks
+   (if (eq :all names)
+       (get-test-thunks (get-tests package) package)
+       (get-test-thunks names package))))
 
 (defun get-test-thunks (names &optional (package *package*))
-  (mapcar (lambda (name) (get-test-thunk name package))
-          names))
+  (loop for name in names collect
+        (get-test-thunk name package)))
 
 (defun get-test-thunk (name package)
   (assert (get-test-code name package) (name package)
@@ -262,10 +281,10 @@ For more information, see lisp-unit.html.
 (defun remove-tests (names &optional (package *package*))
   (let ((table (get-package-table package)))
     (unless (null table)
-      (if (null names)
+      (if (eq :all names)
           (clrhash table)
-          (dolist (name names)
-            (remhash name table))))))
+          (loop for name in names always
+                (remhash name table))))))
 
 (defun remove-all-tests (&optional (package *package*))
   (if (null package)
