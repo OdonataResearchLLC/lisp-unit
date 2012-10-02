@@ -61,6 +61,8 @@
   (loop for (assertion macro-form expansion) in expansions collect
         (list assertion (expansion-equal macro-form expansion))))
 
+;;; Expansions
+
 (defvar *expand-assert-expansions*
   '(("EXPAND-ASSERT-BASIC"
      (expand-assert
