@@ -28,44 +28,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 ;;; 
 ;;; Update history:
 ;;;
-;;; 04/07/06 added ~<...~> to remaining error output forms [CKR]
-;;; 04/06/06 added ~<...~> to compact error output better [CKR]
-;;; 04/06/06 fixed RUN-TESTS to get tests dynamically (bug reported
-;;;          by Daniel Edward Burke) [CKR]
-;;; 02/08/06 added newlines to error output [CKR]
-;;; 12/30/05 renamed ASSERT-PREDICATE to ASSERT-EQUALITY [CKR]
-;;; 12/29/05 added ASSERT-EQ, ASSERT-EQL, ASSERT-EQUALP [CKR]
-;;; 12/22/05 recoded use-debugger to use handler-bind, added option to prompt for debugger, 
-;;; 11/07/05 added *use-debugger* and assert-predicate [DFB]
-;;; 09/18/05 replaced Academic Free License with MIT Licence [CKR]
-;;; 08/30/05 added license notice [CKR]
-;;; 06/28/05 changed RUN-TESTS to compile code at run time, not expand time [CKR]
-;;; 02/21/05 removed length check from SET-EQUAL [CKR]
-;;; 02/17/05 added RUN-ALL-TESTS [CKR]
-;;; 01/18/05 added ASSERT-EQUAL back in [CKR]
-;;; 01/17/05 much clean up, added WITH-TEST-LISTENER [CKR] 
-;;; 01/15/05 replaced ASSERT-EQUAL etc. with ASSERT-TRUE and ASSERT-FALSE [CKR]
-;;; 01/04/05 changed COLLECT-RESULTS to echo output on *STANDARD-OUTPuT* [CKR]
-;;; 01/04/05 added optional package argument to REMOVE-ALL-TESTS [CKR]
-;;; 01/04/05 changed OUTPUT-OK-P to trim spaces and returns [CKR]
-;;; 01/04/05 changed OUTPUT-OK-P to not check output except when asked to [CKR]
-;;; 12/03/04 merged REMOVE-TEST into REMOVE-TESTS [CKR]
-;;; 12/03/04 removed ability to pass forms to RUN-TESTS [CKR]
-;;; 12/03/04 refactored RUN-TESTS expansion into RUN-TEST-THUNKS [CKR]
-;;; 12/02/04 changed to group tests under packages [CKR]
-;;; 11/30/04 changed assertions to put expected value first, like JUnit [CKR]
-;;; 11/30/04 improved error handling and summarization [CKR]
-;;; 11/30/04 generalized RUN-TESTS, removed RUN-TEST [CKR]
-;;; 02/27/04 fixed ASSERT-PRINTS not ignoring value [CKR]
-;;; 02/07/04 fixed ASSERT-EXPANDS failure message [CKR]
-;;; 02/07/04 added ASSERT-NULL, ASSERT-NOT-NULL [CKR]
-;;; 01/31/04 added error handling and totalling to RUN-TESTS [CKR]
-;;; 01/31/04 made RUN-TEST/RUN-TESTS macros [CKR]
-;;; 01/29/04 fixed ASSERT-EXPANDS quote bug [CKR]
-;;; 01/28/04 major changes from BUG-FINDER to be more like JUnit [CKR]
-
 
 #|
+
 How to use
 ----------
 
@@ -102,6 +67,11 @@ For more information, see lisp-unit.html.
 
 (defpackage :lisp-unit
   (:use :common-lisp)
+  ;; Forms for assertions
+  (:export
+   :assert-eq :assert-eql :assert-equal :assert-equalp
+   :assert-equality :assert-prints :assert-expands
+   :assert-true :assert-false :assert-error)
   ;; Functions for managing tests
   (:export
    :define-test
@@ -110,49 +80,46 @@ For more information, see lisp-unit.html.
    :run-tests :run-all-tests
    :use-debugger
    :with-test-listener)
-  ;; Forms for assertions
-  (:export
-   :assert-eq :assert-eql :assert-equal :assert-equalp
-   :assert-equality :assert-prints :assert-expands
-   :assert-true :assert-false :assert-error)
   ;; Utility predicates
   (:export
    :logically-equal :set-equal))
 
 (in-package :lisp-unit)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Globals
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Global counters
 
-(defparameter *test-listener* nil)
+(defparameter *pass* 0
+  "The number of passed assertions.")
 
-(defparameter *tests* (make-hash-table))
+(defparameter *fail* 0
+  "The number of failed assertions.")
 
-;;; Used by RUN-TESTS to collect summary statistics
-(defvar *test-count* 0)
-(defvar *pass-count* 0)
+;;; Global options
 
-;;; Set by RUN-TESTS for use by SHOW-FAILURE
-(defvar *test-name* nil)
+(defparameter *report-results* nil
+  "If not NIL, report the results of the assertions.")
 
-;;; If nil, errors in tests are caught and counted.
-;;; If :ask, user is given option of entering debugger or not.
-;;; If true and not :ask, debugger is entered.
-(defparameter *use-debugger* nil)
+;;; Global unit test database
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Macros
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defparameter *test-db* (make-hash-table :test #'eq)
+  "The unit test database is simply a hash table.")
 
-;;; DEFINE-TEST
+(defun package-table (package &optional create)
+  (cond
+   ((gethash (find-package package) *test-db*))
+   (create
+    (setf (gethash package *test-db*) (make-hash-table)))))
 
 (defmacro define-test (name &body body)
+  "Store the test in the test database."
   `(progn
-     (store-test-code ',name ',body)
+     (setf
+      (gethash ',name (package-table *package* t))
+      ',body)
+     ;; Return the name of the test
      ',name))
 
-;;; ASSERT macros
+;;; Assert macros
 
 (defmacro assert-eq (expected form &rest extras)
   "Assert whether expected and form are EQ."
@@ -229,18 +196,171 @@ For more information, see lisp-unit.html.
   `(lambda ()
      (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
+(defun internal-assert
+       (type form code-thunk expected-thunk extras test)
+  (let ((expected (multiple-value-list (funcall expected-thunk)))
+        (actual (multiple-value-list (funcall code-thunk)))
+        (passed nil))
+    ;; Count the assertion
+    (if (setq passed (test-passed-p type expected actual test))
+        (incf *pass*)
+        (incf *fail*))
+    ;; Report the assertion
+    (when (and *report-results* (not passed))
+      (report-failure type form expected actual extras))
+    ;; Return the result
+    passed))
+
+;;; Test passed predicate.
+
+(defgeneric test-passed-p (type expected actual test)
+  (:documentation
+   "Return the result of the test."))
+
+(defmethod test-passed-p ((type (eql :error)) expected actual test)
+  "Return the result of the error assertion."
+  (or
+   (eql (car actual) (car expected))
+   (typep (car actual) (car expected))))
+
+(defmethod test-passed-p ((type (eql :equal)) expected actual test)
+  "Return the result of the equality assertion."
+  (and
+   (<= (length expected) (length actual))
+   (every test expected actual)))
+
+(defmethod test-passed-p ((type (eql :macro)) expected actual test)
+  "Return the result of the macro expansion."
+  (equal (car actual) (car expected)))
+
+(defmethod test-passed-p ((type (eql :output)) expected actual test)
+  "Return the result of the printed output."
+  (string=
+   (string-trim '(#\newline #\return #\space) (car actual))
+   (car expected)))
+
+(defmethod test-passed-p ((type (eql :result)) expected actual test)
+  "Return the result of the assertion."
+  (logically-equal (car actual) (car expected)))
+
+;;; Failure control strings for reports.
+
+(defgeneric failure-control-string (type)
+  (:method (type)
+   "~&Expected ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
+  (:documentation
+   "Return the FORMAT control string for the failure type."))
+
+(defmethod failure-control-string ((type (eql :error)))
+  "~&~@[Should have signalled ~{~S~^; ~} but saw~] ~{~S~^; ~}")
+
+(defmethod failure-control-string ((type (eql :macro)))
+  "~&Should have expanded to ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
+
+(defmethod failure-control-string ((type (eql :output)))
+  "~&Should have printed ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
+
+;;; Reports
+
+(defun report-failure (type form expected actual extras)
+  "Report the details of the failure assertion."
+  (format t "Failed Form: ~S" form)
+  (format t (failure-control-string type) expected actual)
+  (when extras
+    (format t "~{~&   ~S => ~S~}~%" (funcall extras)))
+  type)
+
+(defun report-summary (name pass fail &optional exerr)
+  (format t "~&~A: ~S assertions passed," name pass)
+  (format t " ~S failed~@[, ~S execution errors~]." fail exerr))
+
 ;;; RUN-TESTS
 
-(defun run-all-tests (&optional (package *package*))
-  "Run all of the tests in package."
-  (run-tests :all package))
+(defclass test-results ()
+  ((test-names
+    :type list
+    :initarg :test-names
+    :reader test-names)
+   (successful-assertions
+    :type fixnum
+    :initform 0
+    :accessor successful-assertions)
+   (failed-assertions
+    :type fixnum
+    :initform 0
+    :accessor failed-assertions)
+   (execution-errors
+    :type fixnum
+    :initform 0
+    :accessor execution-errors)
+   (failed-tests
+    :type list
+    :initform ()
+    :reader failed-tests)
+   (error-tests
+    :type list
+    :initform ()
+    :reader error-tests)
+   (missing-tests
+    :type list
+    :initform ()
+    :reader missing-tests))
+  (:default-initargs :test-names ())
+  (:documentation
+   "Store the results of the tests for further evaluation."))
 
-(defun run-tests (names &optional (package *package*))
+(defmacro run-code (code)
+  "Wrap the code in a lambda and FUNCALL it."
+  `(funcall (lambda () ,@code)))
+
+(defun use-debugger-p (e)
+  (and *use-debugger*
+       (or (not (eql *use-debugger* :ask))
+           (y-or-n-p "~A -- debug?" e))))
+
+(defun run-test-thunk (code)
+  (let ((*pass* 0)
+        (*fail* 0))
+    (declare (special *pass* *fail*))
+    (handler-case (run-code code)
+      (error (condition)
+        (if (use-debugger-p condition)
+            condition
+            (return (values *pass* *fail* :error)))))
+    ;; Return the result count
+    (values *pass* *fail* nil)))
+
+(defun %run-all-thunks (&optional (package *package*))
+  "Run all of the test thunks in the package."
+  (loop
+   with results = (make-instance 'test-results)
+   for test-name being each hash-key in (package-table package)
+   using (hash-value code)
+   if code do
+   (multiple-value-bind (pass fail exerr)
+       (run-test-thunk test-name code)
+     (push test-name (test-names results))
+     ;; Count passed tests
+     (when (plusp pass)
+       (incf (successful-assertions results) pass))
+     ;; Count failed tests and record name
+     (when (plusp fail)
+       (incf (failed-assertions results) fail)
+       (push test-name (failed-tests results)))
+     ;; Count errors and record name
+     (when (eq :error exerr)
+       (incf (execution-errors results))
+       (push test-name (error-tests results))))
+   else do
+   (push test-name (missing-tests results))
+   ;; Return the test results
+   finally (return results)))
+
+(defun run-tests (test-names &optional (package *package*))
   "Run the specified tests in package."
-  (run-test-thunks
-   (if (eq :all names)
-       (get-test-thunks (get-tests package) package)
-       (get-test-thunks names package))))
+  (if (eq :all test-names)
+      (%run-all-thunks package)
+      (%run-thunks test-names package)))
 
 (defun get-test-thunks (names &optional (package *package*))
   (loop for name in names collect
@@ -254,104 +374,8 @@ For more information, see lisp-unit.html.
 (defun use-debugger (&optional (flag t))
   (setq *use-debugger* flag))
 
-;;; WITH-TEST-LISTENER
 (defmacro with-test-listener (listener &body body)
   `(let ((*test-listener* #',listener)) ,@body))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Public functions
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun get-test-code (name &optional (package *package*))
-  (let ((table (get-package-table package)))
-    (unless (null table)
-      (gethash name table))))
-
-(defun get-tests (&optional (package *package*))
-  (let ((l nil)
-        (table (get-package-table package)))
-    (cond ((null table) nil)
-          (t
-           (maphash (lambda (key val)
-                      (declare (ignore val))
-                      (push key l))
-                    table)
-           (sort l #'string< :key #'string)))))
-
-(defun remove-tests (names &optional (package *package*))
-  (let ((table (get-package-table package)))
-    (unless (null table)
-      (if (eq :all names)
-          (clrhash table)
-          (loop for name in names always
-                (remhash name table))))))
-
-(defun remove-all-tests (&optional (package *package*))
-  (if (null package)
-      (clrhash *tests*)
-      (remhash (find-package package) *tests*)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Private functions
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;;; DEFINE-TEST support
-
-(defun get-package-table (package &key create)
-  (let ((table (gethash (find-package package) *tests*)))
-    (or table
-        (and create
-             (setf (gethash package *tests*)
-                   (make-hash-table))))))
-
-(defun get-test-name (form)
-  (if (atom form) form (cadr form)))
-
-(defun store-test-code (name code &optional (package *package*))
-  (setf (gethash name (get-package-table package :create t))
-        code))
-
-;;; ASSERTION support
-
-(defun internal-assert (type form code-thunk expected-thunk extras test)
-  (let* ((expected (multiple-value-list (funcall expected-thunk)))
-         (actual (multiple-value-list (funcall code-thunk)))
-         (passed (test-passed-p type expected actual test)))
-    (incf *test-count*)
-    (when passed
-      (incf *pass-count*))
-    (record-result passed type form expected actual extras)
-    passed))
-
-(defun record-result (passed type form expected actual extras)
-  (funcall (or *test-listener* 'default-listener)
-           passed type *test-name* form expected actual 
-           (and extras (funcall extras))
-           *test-count* *pass-count*))
-
-(defun default-listener
-       (passed type name form expected actual extras test-count pass-count)
-  (declare (ignore test-count pass-count))
-  (unless passed
-    (show-failure type (get-failure-message type)
-                  name form expected actual extras)))
-
-(defun test-passed-p (type expected actual test)
-  (ecase type
-    (:error
-     (or (eql (car actual) (car expected))
-         (typep (car actual) (car expected))))
-    (:equal
-     (and (<= (length expected) (length actual))
-          (every test expected actual)))
-    (:macro
-     (equal (car actual) (car expected)))
-    (:output
-     (string= (string-trim '(#\newline #\return #\space) 
-                           (car actual))
-              (car expected)))
-    (:result
-     (logically-equal (car actual) (car expected)))))
 
 ;;; RUN-TESTS support
 
@@ -387,29 +411,86 @@ For more information, see lisp-unit.html.
         exit
         (return (values *test-count* *pass-count* error-count)))))
 
-(defun use-debugger-p (e)
-  (and *use-debugger*
-       (or (not (eql *use-debugger* :ask))
-           (y-or-n-p "~A -- debug?" e))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Public functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun get-test-code (name &optional (package *package*))
+  (let ((table (get-package-table package)))
+    (unless (null table)
+      (code (gethash name table)))))
+
+(defun get-tests (&optional (package *package*))
+  (loop for key being each hash-key in (get-package-table package)
+        collect key))
+
+(defun remove-tests (names &optional (package *package*))
+  (let ((table (get-package-table package)))
+    (unless (null table)
+      (if (eq :all names)
+          (clrhash table)
+          (loop for name in names always
+                (remhash name table))))))
+
+(defun remove-all-tests (&optional (package *package*))
+  (if (null package)
+      (clrhash *tests*)
+      (remhash (find-package package) *tests*)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Private functions
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; DEFINE-TEST support
+
+;;; ASSERTION support
+
+(defclass test-results ()
+  ((tests
+    :type list
+    :initarg :tests
+    :reader tests)
+   (total-assertions
+    :type fixnum
+    :initform 0
+    :accessor total-assertions)
+   (successful-assertions
+    :type fixnum
+    :initform 0
+    :accessor successful-assertions)
+   (failed-assertions
+    :type fixnum
+    :initform 0
+    :accessor failed-assertions)
+   (execution-errors
+    :type fixnum
+    :initform 0
+    :accessor execution-errors)
+   (failed-tests
+    :type list
+    :initform ()
+    :reader failed-tests)
+   (error-tests
+    :type list
+    :initform ()
+    :reader error-tests))
+  (:documentation
+   "Store the results of the tests for further evaluation."))
+
+(defun record-result (passed type form expected actual extras)
+  (funcall (or *test-listener* 'default-listener)
+           passed type *test-name* form expected actual 
+           (and extras (funcall extras))
+           *test-count* *pass-count*))
+
+(defun default-listener
+       (passed type name form expected actual extras test-count pass-count)
+  (declare (ignore test-count pass-count))
+  (unless passed
+    (show-failure type (get-failure-message type)
+                  name form expected actual extras)))
 
 ;;; OUTPUT support
-
-(defun get-failure-message (type)
-  (case type
-    (:error "~&~@[Should have signalled ~{~S~^; ~} but saw~] ~{~S~^; ~}")
-    (:macro "~&Should have expanded to ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-    (:output "~&Should have printed ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-    (t "~&Expected ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")))
-
-(defun show-failure (type msg name form expected actual extras)
-  (format t "~&~@[~S: ~]~S failed: " name form)
-  (format t msg expected actual)
-  (format t "~{~&   ~S => ~S~}~%" extras)
-  type)
-
-(defun show-summary (name test-count pass-count &optional error-count)
-  (format t "~&~A: ~S assertions passed, ~S failed~@[, ~S execution errors~]."
-          name pass-count (- test-count pass-count) error-count))
 
 (defun collect-form-values (form values)
   (mapcan (lambda (form-arg value)
