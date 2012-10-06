@@ -340,6 +340,13 @@ assertion.")
   (:documentation
    "Store the results of the tests for further evaluation."))
 
+(defmethod print-object ((object test-results) stream)
+  "Print the summary counts with the object."
+  (format stream "#<~A Total(~D) Passed(~D) Failed(~D) Errors(~D)>~%"
+          (class-name (class-of object))
+          (+ (pass object) (fail object))
+          (pass object) (fail object) (exerr object)))
+
 (defun report-summary (results)
   "Print a summary of the results."
   (let ((pass (pass results))
