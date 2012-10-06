@@ -341,9 +341,13 @@ assertion.")
    "Store the results of the tests for further evaluation."))
 
 (defun report-summary (results)
-  (format t " ~D assertions passed~%" (pass results))
-  (format t " ~D failed~%" (fail results))
-  (format t " ~D execution errors.~%" (exerr results)))
+  "Print a summary of the results."
+  (let ((pass (pass results))
+        (fail (fail results)))
+    (format t " ~D assertions total~%" (+ pass fail))
+    (format t " ~D passed~%" pass)
+    (format t " ~D failed~%" fail)
+    (format t " ~D execution errors~%" (exerr results))))
 
 ;;; Run the tests
 
