@@ -45,4 +45,6 @@
   (assert-equal 5 (my-max 2 5))
   (assert-equal 5 (my-max 5 2))
   (assert-equal 10 (my-max 10 10))
-  (assert-equal 0 (my-max -5 0)))
+  (assert-equal 0 (my-max -5 0))
+  ;; Error
+  (assert-equal 5 (my-max-err 2 5)))

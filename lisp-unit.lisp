@@ -67,6 +67,10 @@ For more information, see lisp-unit.html.
 
 (defpackage :lisp-unit
   (:use :common-lisp)
+  ;; Print parameters
+  (:export :*print-summary*
+           :*print-failures*
+           :*print-errors*)
   ;; Forms for assertions
   (:export :assert-eq
            :assert-eql
@@ -82,7 +86,6 @@ For more information, see lisp-unit.html.
   (:export :define-test
            :run-tests
            :remove-tests
-           :show-results
            :use-debugger)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
@@ -99,20 +102,18 @@ For more information, see lisp-unit.html.
 
 ;;; Global options
 
-(defparameter *show-results* nil
-  "If not NIL, show the results of the assertions.")
+(defparameter *print-summary* nil
+  "Print a summary of the pass, fail, and error count if non-nil.")
+
+(defparameter *print-failures* nil
+  "Print failure messages if non-NIL.")
+
+(defparameter *print-errors* nil
+  "Print error messages if non-NIL.")
 
 (defparameter *use-debugger* nil
   "If not NIL, enter the debugger when an error is encountered in an
 assertion.")
-
-(defun show-results (&optional (flag t))
-  "Set flag to report results."
-  (setq *show-results* flag))
-
-(defun use-debugger (&optional (flag t))
-  "Set flag to use the debugger."
-  (setq *use-debugger* flag))
 
 (defun use-debugger-p (condition)
   "Debug or ignore errors."
@@ -120,6 +121,44 @@ assertion.")
    ((eq :ask *use-debugger*)
     (y-or-n-p "~A -- debug?" condition))
    (*use-debugger*)))
+
+;;; Failure control strings
+
+(defgeneric failure-control-string (type)
+  (:method (type)
+   "~& | Expected ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
+  (:documentation
+   "Return the FORMAT control string for the failure type."))
+
+(defmethod failure-control-string ((type (eql :error)))
+  "~& | ~@[Should have signalled ~{~S~^; ~} but saw~] ~{~S~^; ~}")
+
+(defmethod failure-control-string ((type (eql :macro)))
+  "~& | Should have expanded to ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
+
+(defmethod failure-control-string ((type (eql :output)))
+  "~& | Should have printed ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
+
+(defun print-failure (type form expected actual extras)
+  "Report the details of the failure assertion."
+  (format t " | Failed Form: ~S" form)
+  (format t (failure-control-string type) expected actual)
+  (when extras
+    (format t "~{~& | ~S => ~S~}~%" (funcall extras)))
+  (format t "~& |~%")
+  type)
+
+(defun print-error (condition)
+  "Print the error condition."
+  (let ((*print-escape* nil))
+    (format t "~& | Execution error:~% | ~W" condition)
+    (format t "~& |~%")))
+
+(defun print-summary (name pass fail &optional exerr)
+  "Print a summary of the test results."
+  (format t "~&~A: ~S assertions passed, ~S failed"
+          name pass fail)
+  (format t "~@[, ~S execution errors~].~2%" exerr))
 
 ;;; Global unit test database
 
@@ -151,8 +190,10 @@ assertion.")
           (remhash (find-package package) *test-db*))
       (let ((table (package-table package)))
         (unless (null table)
-          (loop for name in names always
-                (remhash name table))))))
+          (loop for name in names
+                always (remhash name table)
+                collect name into removed
+                finally (return removed))))))
 
 ;;; Assert macros
 
@@ -233,6 +274,7 @@ assertion.")
 
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
+  "Perform the assertion and record the results."
   (let ((expected (multiple-value-list (funcall expected-thunk)))
         (actual (multiple-value-list (funcall code-thunk)))
         (passed nil))
@@ -241,8 +283,8 @@ assertion.")
         (incf *pass*)
         (incf *fail*))
     ;; Report the assertion
-    (when (and (not passed) *show-results*)
-      (report-failure type form expected actual extras))
+    (when (and (not passed) *print-failures*)
+      (print-failure type form expected actual extras))
     ;; Return the result
     passed))
 
@@ -278,34 +320,7 @@ assertion.")
   "Return the result of the assertion."
   (logically-equal (car actual) (car expected)))
 
-;;; Failure control strings for reports.
-
-(defgeneric failure-control-string (type)
-  (:method (type)
-   "~&Expected ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-  (:documentation
-   "Return the FORMAT control string for the failure type."))
-
-(defmethod failure-control-string ((type (eql :error)))
-  "~&~@[Should have signalled ~{~S~^; ~} but saw~] ~{~S~^; ~}")
-
-(defmethod failure-control-string ((type (eql :macro)))
-  "~&Should have expanded to ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-
-(defmethod failure-control-string ((type (eql :output)))
-  "~&Should have printed ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-
-;;; Reports
-
-(defun report-failure (type form expected actual extras)
-  "Report the details of the failure assertion."
-  (format t "Failed Form: ~S" form)
-  (format t (failure-control-string type) expected actual)
-  (when extras
-    (format t "~{~&   ~S => ~S~}~%" (funcall extras)))
-  type)
-
-;;; RUN-TESTS
+;;; Results
 
 (defclass test-results ()
   ((test-names
@@ -347,33 +362,6 @@ assertion.")
           (+ (pass object) (fail object))
           (pass object) (fail object) (exerr object)))
 
-(defun report-summary (results)
-  "Print a summary of the results."
-  (let ((pass (pass results))
-        (fail (fail results)))
-    (format t " ~D assertions total~%" (+ pass fail))
-    (format t " ~D passed~%" pass)
-    (format t " ~D failed~%" fail)
-    (format t " ~D execution errors~%" (exerr results))))
-
-;;; Run the tests
-
-(defun run-code (code)
-  "Run the code to test the assertions."
-  (funcall (coerce `(lambda () ,@code) 'function)))
-
-(defun run-test-thunk (code)
-  (let ((*pass* 0)
-        (*fail* 0))
-    (handler-case (run-code code)
-      (error (condition)
-        (if (use-debugger-p condition)
-            condition
-            (return-from run-test-thunk
-              (values *pass* *fail* :error)))))
-    ;; Return the result count
-    (values *pass* *fail* nil)))
-
 (defun record-result (test-name code results)
   "Run the test code and record the result."
   (multiple-value-bind (pass fail exerr)
@@ -389,7 +377,42 @@ assertion.")
     ;; Count errors and record name
     (when (eq :error exerr)
       (incf (exerr results))
-      (push test-name (error-tests results)))))
+      (push test-name (error-tests results)))
+    ;; Print a summary of the results
+    (when *print-summary*
+      (print-summary
+       test-name pass fail
+       (when (eq :error exerr) 1)))))
+
+(defun print-results (results)
+  "Print a summary of all results."
+  (let ((pass (pass results))
+        (fail (fail results)))
+    (format t "Unit Test Summary~%")
+    (format t " | ~D assertions total~%" (+ pass fail))
+    (format t " | ~D passed~%" pass)
+    (format t " | ~D failed~%" fail)
+    (format t " | ~D execution errors~2%" (exerr results))))
+
+;;; Run the tests
+
+(defun run-code (code)
+  "Run the code to test the assertions."
+  (funcall (coerce `(lambda () ,@code) 'function)))
+
+(defun run-test-thunk (code)
+  (let ((*pass* 0)
+        (*fail* 0))
+    (handler-case (run-code code)
+      (error (condition)
+        (when *print-errors*
+          (print-error condition))
+        (if (use-debugger-p condition)
+            condition
+            (return-from run-test-thunk
+              (values *pass* *fail* :error)))))
+    ;; Return the result count
+    (values *pass* *fail* nil)))
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
@@ -403,6 +426,8 @@ assertion.")
    (push test-name (missing-tests results))
    ;; Summarize and return the test results
    finally
+   (when *print-summary*
+     (print-results results))
    (return results)))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -417,6 +442,8 @@ assertion.")
    else do
    (push test-name (missing-tests results))
    finally
+   (when *print-summary*
+     (print-results results))
    (return results)))
 
 (defun run-tests (test-names &optional (package *package*))
