@@ -434,8 +434,7 @@ assertion.")
    (push test-name (missing-tests results))
    ;; Summarize and return the test results
    finally
-   (when *print-summary*
-     (print-results results))
+   (summarize-results results)
    (return results)))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -450,8 +449,7 @@ assertion.")
    else do
    (push test-name (missing-tests results))
    finally
-   (when *print-summary*
-     (print-results results))
+   (summarize-results results)
    (return results)))
 
 (defun run-tests (test-names &optional (package *package*))
