@@ -87,6 +87,12 @@ For more information, see lisp-unit.html.
            :run-tests
            :remove-tests
            :use-debugger)
+  ;; Functions for reporting test results
+  (:export :test-names
+           :failed-tests
+           :error-tests
+           :missing-tests
+           :summarize-results)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
 
@@ -126,7 +132,7 @@ assertion.")
 
 (defgeneric failure-control-string (type)
   (:method (type)
-   "~& | Expected ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
+   "~& | Expected ~{~S~^; ~} ~<~% | ~:;but saw ~{~S~^; ~}~>")
   (:documentation
    "Return the FORMAT control string for the failure type."))
 
@@ -384,7 +390,7 @@ assertion.")
        test-name pass fail
        (when (eq :error exerr) 1)))))
 
-(defun print-results (results)
+(defun summarize-results (results)
   "Print a summary of all results."
   (let ((pass (pass results))
         (fail (fail results)))
@@ -392,7 +398,9 @@ assertion.")
     (format t " | ~D assertions total~%" (+ pass fail))
     (format t " | ~D passed~%" pass)
     (format t " | ~D failed~%" fail)
-    (format t " | ~D execution errors~2%" (exerr results))))
+    (format t " | ~D execution errors~%" (exerr results))
+    (format t " | ~D missing tests~2%"
+            (length (missing-tests results)))))
 
 ;;; Run the tests
 
