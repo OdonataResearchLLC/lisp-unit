@@ -6,7 +6,7 @@ is a long history of testing packages in Lisp, usually called
 "regression" testers. More recent packages in Lisp and other languages
 have been inspired by [JUnit for Java][JUnit].
 
-Documentation is located on the project wiki.
+[Documentation is located on the project wiki.][wiki]
 
 ### How to use lisp-unit
 
@@ -20,18 +20,20 @@ loaded using either [Quicklisp][] or [ASDF][].
 
 ### Version 1 Remaining Tasks
 
-* (0.8.0) Refined internal test data structures.
-* (0.9.0) Improved test report tools.
-* (1.0.0) Test Anything Protocol(TAP) support.
+* (0.9.0) Test tags to facilitate running test subsets.
+* (1.0.0) Expanded internal testing.
 
 ### Future Features
 
 * Fixtures
 * Test Suites
 * Benchmarking tools
+* Test Anything Protocol(TAP) support.
 
 [orig]: <http://www.cs.northwestern.edu/academics/courses/325/readings/lisp-unit.html>
   "Original Lisp Unit"
+[wiki]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki>
+  "Lisp Unit Wiki"
 [JUnit]: <http://www.junit.org> "JUnit"
 [Quicklisp]: <http://www.quicklisp.org> "Quicklisp"
 [ASDF]: <http://common-lisp.net/project/asdf/> "ASDF"
