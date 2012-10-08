@@ -48,3 +48,11 @@
   (assert-equal 0 (my-max -5 0))
   ;; Error
   (assert-equal 5 (my-max-err 2 5)))
+
+(defun my-sqrt (n)
+  "Not really."
+  (/ n 2))
+
+(define-test my-sqrt
+  (dotimes (i 5)
+    (assert-equal i (my-sqrt (* i i)) i)))
