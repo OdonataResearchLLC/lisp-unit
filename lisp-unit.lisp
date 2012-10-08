@@ -385,7 +385,7 @@ assertion.")
       (incf (exerr results))
       (push test-name (error-tests results)))
     ;; Print a summary of the results
-    (when *print-summary*
+    (when (or *print-summary* *print-failures* *print-errors*)
       (print-summary
        test-name pass fail
        (when (eq :error exerr) 1)))))
