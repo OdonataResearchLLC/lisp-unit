@@ -20,25 +20,17 @@ THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
 OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
 OTHER DEALINGS IN THE SOFTWARE.
-|#
 
-
-;;; A test suite package, modelled after JUnit.
-;;; Author: Chris Riesbeck
-;;; 
-;;; Update history:
-;;;
-
-#|
 
 How to use
 ----------
 
-1. Read the documentation in lisp-unit.html.
+1. Read the documentation at:
+   https://github.com/OdonataResearchLLC/lisp-unit/wiki
 
 2. Make a file of DEFINE-TEST's. See exercise-tests.lisp for many
-examples. If you want, start your test file with (REMOVE-TESTS) to
-clear any previously defined tests.
+examples. If you want, start your test file with (REMOVE-TESTS :ALL)
+to clear any previously defined tests.
 
 2. Load this file.
 
@@ -46,22 +38,17 @@ clear any previously defined tests.
 
 3. Load your code file and your file of tests.
 
-4. Test your code with (RUN-TESTS test-name1 test-name2 ...) -- no quotes! --
-or simply (RUN-TESTS) to run all defined tests.
+4. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
+simply (RUN-TESTS :ALL) to run all defined tests.
 
-A summary of how many tests passed and failed will be printed,
-with details on the failures.
+A summary of how many tests passed and failed will be printed.
 
 Note: Nothing is compiled until RUN-TESTS is expanded. Redefining
 functions or even macros does not require reloading any tests.
 
-For more information, see lisp-unit.html. 
-
 |#
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Packages
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (in-package :cl-user)
 
