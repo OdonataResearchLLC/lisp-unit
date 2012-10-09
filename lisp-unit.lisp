@@ -71,8 +71,8 @@ functions or even macros does not require reloading any tests.
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
-           :run-tests
-           :remove-tests
+           :run-tests :run-all-tests
+           :remove-tests :remove-all-tests
            :use-debugger)
   ;; Functions for reporting test results
   (:export :test-names
@@ -174,6 +174,10 @@ assertion.")
      ',name))
 
 ;;; Remove tests from the test DB
+
+;;; 0.8.1 Compatibility revision for Quicklisp
+(defun remove-all-tests (&optional (package *package*))
+  (remove-tests :all package))
 
 (defun remove-tests (names &optional (package *package*))
   "Remove individual tests or entire sets."
@@ -444,6 +448,10 @@ assertion.")
   (if (eq :all test-names)
       (%run-all-thunks package)
       (%run-thunks test-names package)))
+
+;;; 0.8.1 Compatibility revision for Quicklisp
+(defmacro run-all-tests (package &rest tests)
+  `(new-run-tests :all package))
 
 ;;; 0.8.1 Compatibility revision for Quicklisp
 (defmacro run-tests (&rest test-names)
