@@ -439,11 +439,16 @@ assertion.")
    (summarize-results results)
    (return results)))
 
-(defun run-tests (test-names &optional (package *package*))
+(defun new-run-tests (test-names &optional (package *package*))
   "Run the specified tests in package."
   (if (eq :all test-names)
       (%run-all-thunks package)
       (%run-thunks test-names package)))
+
+;;; 0.8.1 Compatibility revision for Quicklisp
+(defmacro run-tests (&rest test-names)
+  (let ((names (or test-names :all)))
+    `(new-run-tests ,names)))
 
 ;;; Useful equality predicates for tests
 
