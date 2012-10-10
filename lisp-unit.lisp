@@ -73,6 +73,7 @@ functions or even macros does not require reloading any tests.
   (:export :define-test
            :get-tests
            :get-test-code
+           :get-test-documentation
            :remove-tests
            :run-tests
            :use-debugger)
@@ -179,14 +180,31 @@ assertion.")
   (:default-initargs :doc "" :code ())
   (:documentation))
 
+;;; NOTE: Shamelessly taken from PG's analyze-body
+(defun parse-body (body &optional doc tag)
+  "Separate the components of the body."
+  (let ((item (first body)))
+    (cond
+     ((and (listp item) (eq :tag (first item)))
+      (parse-body (rest body) doc (nconc (rest item) tag)))
+     ((and (stringp item) (not doc) (rest body))
+      (if tag
+          (values doc tag (rest body))
+          (parse-body (rest body) doc tag)))
+     (t (values doc tag body)))))
+
 (defmacro define-test (name &body body)
   "Store the test in the test database."
-  `(progn
-     (setf
-      (gethash ',name (package-table *package* t))
-      (make-instance 'unit-test :code ',body))
-     ;; Return the name of the test
-     ',name))
+  (multiple-value-bind (doc tag code) (parse-body body)
+    `(progn
+       (setf
+        ;; Unit test
+        (gethash ',name (package-table *package* t))
+        (make-instance 'unit-test :doc ,doc :code ',code))
+        ;; Tags
+       (prin1 ',tag)
+       ;; Return the name of the test
+       ',name)))
 
 ;;; Manage tests
 
@@ -196,6 +214,14 @@ assertion.")
     (when table
       (loop for test-name being each hash-key in table
             collect test-name))))
+
+(defun get-test-documentation (name &optional (package *package*))
+  "Return the documentation for the test."
+  (let ((unit-test (gethash name (package-table package))))
+    (if (null unit-test)
+        (warn "No code defined for test ~A in package ~S."
+              name package)
+        (doc unit-test))))
 
 (defun get-test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
