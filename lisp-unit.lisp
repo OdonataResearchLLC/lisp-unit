@@ -32,18 +32,18 @@ How to use
 examples. If you want, start your test file with (REMOVE-TESTS :ALL)
 to clear any previously defined tests.
 
-2. Load this file.
+3. Load this file.
 
-2. (use-package :lisp-unit)
+4. (use-package :lisp-unit)
 
-3. Load your code file and your file of tests.
+5. Load your code file and your file of tests.
 
-4. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
+6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
 simply (RUN-TESTS :ALL) to run all defined tests.
 
 A summary of how many tests passed and failed will be printed.
 
-Note: Nothing is compiled until RUN-TESTS is expanded. Redefining
+NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
 functions or even macros does not require reloading any tests.
 
 |#

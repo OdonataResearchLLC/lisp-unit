@@ -12,10 +12,11 @@ have been inspired by [JUnit for Java][JUnit].
 
 The interface for managing tests has been simplified beginning in
 Version 0.9.0. The simplified interface is fully described on the
-[Reference page][Reference]. The motivation for simplifying the
+[Reference page][reference]. The motivation for simplifying the
 interface and a comparison with the original interface is described on
 the [Simplified Interface page][interface].
 
+[reference]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Reference>
 [interface]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Simplified-Interface>
 
 ### How to use lisp-unit
