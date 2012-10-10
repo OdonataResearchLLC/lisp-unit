@@ -77,6 +77,11 @@ functions or even macros does not require reloading any tests.
            :remove-tests
            :run-tests
            :use-debugger)
+  ;; Functions for managing tags
+  (:export :get-tags
+           :get-tagged-tests
+           :remove-tags
+           :run-tags)
   ;; Functions for reporting test results
   (:export :test-names
            :failed-tests
@@ -261,6 +266,20 @@ assertion.")
 
 ;;; Manage tags
 
+(defun %tests-from-all-tags (&optional (package *package*))
+  "Return all of the tests that have been tagged."
+  (loop for tests being each hash-value in (package-tags package)
+        nconc (copy-list tests) into all-tests
+        finally (return (delete-duplicates all-tests))))
+
+(defun %tests-from-tags (tags &optional (package *package*))
+  "Return the tests associated with the tags."
+  (loop with table = (package-tags package)
+        for tag in tags
+        as tests = (gethash tag table)
+        nconc (copy-list tests) into all-tests
+        finally (return (delete-duplicates all-tests))))
+
 (defun get-tags (&optional (package *package*))
   "Return a list of the tags in package."
   (let ((tags (package-tags package)))
@@ -268,13 +287,11 @@ assertion.")
       (loop for tag being each hash-key in tags
             collect tag))))
 
-(defun get-tag-tests (tag &optional (package *package*))
-  "Returns the code stored for the test name."
-  (let ((test-names (gethash tag (package-tags package))))
-    (if (null test-names)
-        (warn "No tests defined for tag ~A in package ~S."
-              tag package)
-        test-names)))
+(defun get-tagged-tests (tags &optional (package *package*))
+  "Run the tests associated with the specified tags in package."
+  (if (eq :all tags)
+      (%tests-from-all-tags package)
+      (%tests-from-tags tags package)))
 
 (defun remove-tags (tags &optional (package *package*))
   "Remove individual tags or entire sets."
@@ -545,6 +562,10 @@ assertion.")
   (if (eq :all test-names)
       (%run-all-thunks package)
       (%run-thunks test-names package)))
+
+(defun run-tags (tags &optional (package *package*))
+  "Run the tests associated with the specified tags in package."
+  (%run-thunks (get-tagged-tests tags package) package))
 
 ;;; Useful equality predicates for tests
 
