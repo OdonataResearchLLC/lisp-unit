@@ -168,6 +168,19 @@ assertion.")
     (setf (gethash package *test-db*) (make-hash-table)))
    (t (warn "No tests defined for package: ~S" package))))
 
+;;; Global tags database
+
+(defparameter *tag-db* (make-hash-table :test #'eq)
+  "The tag database is simply a hash table.")
+
+(defun package-tags (package &optional create)
+  "Return the tags DB for the package."
+  (cond
+   ((gethash (find-package package) *tag-db*))
+   (create
+    (setf (gethash package *tag-db*) (make-hash-table)))
+   (t (warn "No tags defined for package: ~S" package))))
+
 (defclass unit-test ()
   ((doc
     :type string
@@ -201,8 +214,10 @@ assertion.")
         ;; Unit test
         (gethash ',name (package-table *package* t))
         (make-instance 'unit-test :doc ,doc :code ',code))
-        ;; Tags
-       (prin1 ',tag)
+       ;; Tags
+       (loop for tag in ',tag do
+             (pushnew
+              ',name (gethash tag (package-tags *package* t))))
        ;; Return the name of the test
        ',name)))
 
@@ -242,6 +257,36 @@ assertion.")
           (loop for name in names
                 always (remhash name table)
                 collect name into removed
+                finally (return removed))))))
+
+;;; Manage tags
+
+(defun get-tags (&optional (package *package*))
+  "Return a list of the tags in package."
+  (let ((tags (package-tags package)))
+    (when tags
+      (loop for tag being each hash-key in tags
+            collect tag))))
+
+(defun get-tag-tests (tag &optional (package *package*))
+  "Returns the code stored for the test name."
+  (let ((test-names (gethash tag (package-tags package))))
+    (if (null test-names)
+        (warn "No tests defined for tag ~A in package ~S."
+              tag package)
+        test-names)))
+
+(defun remove-tags (tags &optional (package *package*))
+  "Remove individual tags or entire sets."
+  (if (eq :all tags)
+      (if (null package)
+          (clrhash *tag-db*)
+          (remhash (find-package package) *tag-db*))
+      (let ((table (package-tags package)))
+        (unless (null table)
+          (loop for tag in tags
+                always (remhash tag table)
+                collect tag into removed
                 finally (return removed))))))
 
 ;;; Assert macros
