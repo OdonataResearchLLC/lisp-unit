@@ -162,7 +162,8 @@ assertion.")
   (cond
    ((gethash (find-package package) *test-db*))
    (create
-    (setf (gethash package *test-db*) (make-hash-table)))))
+    (setf (gethash package *test-db*) (make-hash-table)))
+   (t (warn "No tests defined for package: ~S" package))))
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
@@ -381,7 +382,7 @@ assertion.")
   "Print a summary of all results."
   (let ((pass (pass results))
         (fail (fail results)))
-    (format t "Unit Test Summary~%")
+    (format t "~&Unit Test Summary~%")
     (format t " | ~D assertions total~%" (+ pass fail))
     (format t " | ~D passed~%" pass)
     (format t " | ~D failed~%" fail)
