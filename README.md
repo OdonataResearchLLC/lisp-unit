@@ -8,6 +8,16 @@ have been inspired by [JUnit for Java][JUnit].
 
 [Documentation is located on the project wiki.][wiki]
 
+## Simplified Interface
+
+The interface for managing tests has been simplified beginning in
+Version 0.9.0. The simplified interface is fully described on the
+[Reference page][Reference]. The motivation for simplifying the
+interface and a comparison with the original interface is described on
+the [Interface page][Interface].
+
+[Interface]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Interface>
+
 ### How to use lisp-unit
 
 The core definitions of *lisp-unit* may be used by loading the single
