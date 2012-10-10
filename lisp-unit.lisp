@@ -167,12 +167,24 @@ assertion.")
     (setf (gethash package *test-db*) (make-hash-table)))
    (t (warn "No tests defined for package: ~S" package))))
 
+(defclass unit-test ()
+  ((doc
+    :type string
+    :initarg :doc
+    :reader doc)
+   (code
+    :type list
+    :initarg :code
+    :reader code))
+  (:default-initargs :doc "" :code ())
+  (:documentation))
+
 (defmacro define-test (name &body body)
   "Store the test in the test database."
   `(progn
      (setf
       (gethash ',name (package-table *package* t))
-      ',body)
+      (make-instance 'unit-test :code ',body))
      ;; Return the name of the test
      ',name))
 
@@ -187,11 +199,11 @@ assertion.")
 
 (defun get-test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
-  (let ((code (gethash name (package-table package))))
-    (if (null code)
+  (let ((unit-test (gethash name (package-table package))))
+    (if (null unit-test)
         (warn "No code defined for test ~A in package ~S."
               name package)
-        code)))
+        (code unit-test))))
 
 (defun remove-tests (names &optional (package *package*))
   "Remove individual tests or entire sets."
@@ -432,9 +444,9 @@ assertion.")
   (loop
    with results = (make-instance 'test-results)
    for test-name being each hash-key in (package-table package)
-   using (hash-value code)
-   if code do
-   (record-result test-name code results)
+   using (hash-value unit-test)
+   if unit-test do
+   (record-result test-name (code unit-test) results)
    else do
    (push test-name (missing-tests results))
    ;; Summarize and return the test results
@@ -448,9 +460,9 @@ assertion.")
    with table = (package-table package)
    and results = (make-instance 'test-results)
    for test-name in test-names
-   as code = (gethash test-name table)
-   if code do
-   (record-result test-name code results)
+   as unit-test = (gethash test-name table)
+   if unit-test do
+   (record-result test-name (code unit-test) results)
    else do
    (push test-name (missing-tests results))
    finally
