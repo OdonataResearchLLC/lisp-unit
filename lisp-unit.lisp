@@ -196,7 +196,8 @@ assertion.")
     :initarg :code
     :reader code))
   (:default-initargs :doc "" :code ())
-  (:documentation))
+  (:documentation
+   "Organize the unit test documentation and code."))
 
 ;;; NOTE: Shamelessly taken from PG's analyze-body
 (defun parse-body (body &optional doc tag)
