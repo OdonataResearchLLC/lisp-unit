@@ -71,8 +71,10 @@ functions or even macros does not require reloading any tests.
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
-           :run-tests
+           :get-tests
+           :get-test-code
            :remove-tests
+           :run-tests
            :use-debugger)
   ;; Functions for reporting test results
   (:export :test-names
@@ -174,7 +176,22 @@ assertion.")
      ;; Return the name of the test
      ',name))
 
-;;; Remove tests from the test DB
+;;; Manage tests
+
+(defun get-tests (&optional (package *package*))
+  "Return a list of the tests in package."
+  (let ((table (package-table package)))
+    (when table
+      (loop for test-name being each hash-key in table
+            collect test-name))))
+
+(defun get-test-code (name &optional (package *package*))
+  "Returns the code stored for the test name."
+  (let ((code (gethash name (package-table package))))
+    (if (null code)
+        (warn "No code defined for test ~A in package ~S."
+              name package)
+        code)))
 
 (defun remove-tests (names &optional (package *package*))
   "Remove individual tests or entire sets."
