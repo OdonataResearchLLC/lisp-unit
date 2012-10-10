@@ -162,7 +162,8 @@ assertion.")
   (cond
    ((gethash (find-package package) *test-db*))
    (create
-    (setf (gethash package *test-db*) (make-hash-table)))))
+    (setf (gethash package *test-db*) (make-hash-table)))
+   (t (error "No tests in package: ~S" package))))
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
@@ -451,12 +452,11 @@ assertion.")
 
 ;;; 0.8.1 Compatibility revision for Quicklisp
 (defmacro run-all-tests (package &rest tests)
-  `(new-run-tests :all package))
+  `(new-run-tests (or ',tests :all) ,package))
 
 ;;; 0.8.1 Compatibility revision for Quicklisp
 (defmacro run-tests (&rest test-names)
-  (let ((names (or test-names :all)))
-    `(new-run-tests ,names)))
+  `(new-run-tests (or ',test-names :all)))
 
 ;;; Useful equality predicates for tests
 
