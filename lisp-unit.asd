@@ -26,7 +26,7 @@
 
 (defsystem :lisp-unit
   :description "Common Lisp library that supports unit testing."
-  :version "0.8.0"
+  :version "0.8.1"
   :author "Thomas M. Hermann <thomas.m.hermann@odonata-research.com>"
   :license "MIT"
   :components
