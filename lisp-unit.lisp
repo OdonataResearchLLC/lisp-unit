@@ -125,29 +125,37 @@ assertion.")
 
 ;;; Failure control strings
 
-(defgeneric failure-control-string (type)
-  (:method (type)
-   "~& | Expected ~{~S~^; ~} ~<~% | ~:;but saw ~{~S~^; ~}~>")
+(defgeneric print-failure (type form expected actual extras)
   (:documentation
-   "Return the FORMAT control string for the failure type."))
+   "Report the details of the failure assertion."))
 
-(defmethod failure-control-string ((type (eql :error)))
-  "~& | ~@[Should have signalled ~{~S~^; ~} but saw~] ~{~S~^; ~}")
-
-(defmethod failure-control-string ((type (eql :macro)))
-  "~& | Should have expanded to ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-
-(defmethod failure-control-string ((type (eql :output)))
-  "~& | Should have printed ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-
-(defun print-failure (type form expected actual extras)
-  "Report the details of the failure assertion."
+(defmethod print-failure :around (type form expected actual extras)
+  "Failure header and footer output."
   (format t " | Failed Form: ~S" form)
-  (format t (failure-control-string type) expected actual)
+  (call-next-method)
   (when extras
     (format t "~{~& | ~S => ~S~}~%" (funcall extras)))
   (format t "~& |~%")
   type)
+
+(defmethod print-failure (type form expected actual extras)
+  (format t "~& | Expected ~{~S~^; ~} " expected)
+  (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" actual))
+
+(defmethod print-failure ((type (eql :error))
+                          form expected actual extras)
+  (format t "~& | ~@[Should have signalled ~{~S~^; ~}" expected)
+  (format t " but saw~] ~{~S~^; ~}" actual))
+
+(defmethod print-failure ((type (eql :macro))
+                          form expected actual extras)
+  (format t "~& | Should have expanded to ~{~S~^; ~} " expected)
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
+
+(defmethod print-failure ((type (eql :output))
+                          form expected actual extras)
+  (format t "~& | Should have printed ~{~S~^; ~} " expected)
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
 
 (defun print-error (condition)
   "Print the error condition."
