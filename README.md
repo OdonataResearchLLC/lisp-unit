@@ -8,17 +8,6 @@ have been inspired by [JUnit for Java][JUnit].
 
 [Documentation is located on the project wiki.][wiki]
 
-## Simplified Interface
-
-The interface for managing tests has been simplified beginning in
-Version 0.9.0. The simplified interface is fully described on the
-[Reference page][reference]. The motivation for simplifying the
-interface and a comparison with the original interface is described on
-the [Simplified Interface page][interface].
-
-[reference]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Reference>
-[interface]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Simplified-Interface>
-
 ### How to use lisp-unit
 
 The core definitions of *lisp-unit* may be used by loading the single
@@ -29,9 +18,32 @@ loaded using either [Quicklisp][] or [ASDF][].
 2. Load using [Quicklisp][] : `(ql:quickload :lisp-unit)`.
 3. Load using [ASDF][] : `(asdf:load-system :lisp-unit)`.
 
-### Version 1 Remaining Tasks
+## Version 0.9.0 Features
 
-* (0.9.0) Test tags to facilitate running test subsets.
+### Simplified Interface
+
+The interface for managing tests has been simplified beginning in
+Version 0.9.0. The simplified interface is fully described on the
+[Reference page][reference]. The motivation for simplifying the
+interface and a comparison with the original interface is described on
+the [Simplified Interface page][interface].
+
+[reference]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Reference>
+[interface]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Simplified-Interface>
+
+### Test Documentation
+
+A documentation string can now be used in `define-test` like it is in
+`defun`.
+
+### Test tags
+
+Tests can be tagged by adding on or more `(:tag tag1 tag2 ...)` forms
+after the name or documentation string in `define-test`. The tags can
+then be used to run subsets of the unit tests with `run-tags`.
+
+## Version 1 Remaining Tasks
+
 * (1.0.0) Expanded internal testing.
 
 ### Future Features
