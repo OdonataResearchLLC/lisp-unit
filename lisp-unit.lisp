@@ -32,18 +32,18 @@ How to use
 examples. If you want, start your test file with (REMOVE-TESTS :ALL)
 to clear any previously defined tests.
 
-2. Load this file.
+3. Load this file.
 
-2. (use-package :lisp-unit)
+4. (use-package :lisp-unit)
 
-3. Load your code file and your file of tests.
+5. Load your code file and your file of tests.
 
-4. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
+6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
 simply (RUN-TESTS :ALL) to run all defined tests.
 
 A summary of how many tests passed and failed will be printed.
 
-Note: Nothing is compiled until RUN-TESTS is expanded. Redefining
+NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
 functions or even macros does not require reloading any tests.
 
 |#
@@ -71,9 +71,17 @@ functions or even macros does not require reloading any tests.
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
-           :run-tests :run-all-tests
-           :remove-tests :remove-all-tests
+           :list-tests
+           :test-code
+           :test-documentation
+           :remove-tests
+           :run-tests
            :use-debugger)
+  ;; Functions for managing tags
+  (:export :list-tags
+           :tagged-tests
+           :remove-tags
+           :run-tags)
   ;; Functions for reporting test results
   (:export :test-names
            :failed-tests
@@ -117,29 +125,38 @@ assertion.")
 
 ;;; Failure control strings
 
-(defgeneric failure-control-string (type)
-  (:method (type)
-   "~& | Expected ~{~S~^; ~} ~<~% | ~:;but saw ~{~S~^; ~}~>")
+(defgeneric print-failure (type form expected actual extras)
   (:documentation
-   "Return the FORMAT control string for the failure type."))
+   "Report the details of the failure assertion."))
 
-(defmethod failure-control-string ((type (eql :error)))
-  "~& | ~@[Should have signalled ~{~S~^; ~} but saw~] ~{~S~^; ~}")
-
-(defmethod failure-control-string ((type (eql :macro)))
-  "~& | Should have expanded to ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-
-(defmethod failure-control-string ((type (eql :output)))
-  "~& | Should have printed ~{~S~^; ~} ~<~%~:;but saw ~{~S~^; ~}~>")
-
-(defun print-failure (type form expected actual extras)
-  "Report the details of the failure assertion."
+(defmethod print-failure :around (type form expected actual extras)
+  "Failure header and footer output."
   (format t " | Failed Form: ~S" form)
-  (format t (failure-control-string type) expected actual)
+  (call-next-method)
   (when extras
     (format t "~{~& | ~S => ~S~}~%" (funcall extras)))
   (format t "~& |~%")
   type)
+
+(defmethod print-failure (type form expected actual extras)
+  (format t "~& | Expected ~{~S~^; ~} " expected)
+  (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" actual))
+
+(defmethod print-failure ((type (eql :error))
+                          form expected actual extras)
+  (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
+          expected)
+  (format t " ~{~S~^; ~}" actual))
+
+(defmethod print-failure ((type (eql :macro))
+                          form expected actual extras)
+  (format t "~& | Should have expanded to ~{~S~^; ~} " expected)
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
+
+(defmethod print-failure ((type (eql :output))
+                          form expected actual extras)
+  (format t "~& | Should have printed ~{~S~^; ~} " expected)
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
 
 (defun print-error (condition)
   "Print the error condition."
@@ -163,18 +180,86 @@ assertion.")
    ((gethash (find-package package) *test-db*))
    (create
     (setf (gethash package *test-db*) (make-hash-table)))
-   (t (error "No tests in package: ~S" package))))
+   (t (warn "No tests defined for package: ~S" package))))
+
+;;; Global tags database
+
+(defparameter *tag-db* (make-hash-table :test #'eq)
+  "The tag database is simply a hash table.")
+
+(defun package-tags (package &optional create)
+  "Return the tags DB for the package."
+  (cond
+   ((gethash (find-package package) *tag-db*))
+   (create
+    (setf (gethash package *tag-db*) (make-hash-table)))
+   (t (warn "No tags defined for package: ~S" package))))
+
+(defclass unit-test ()
+  ((doc
+    :type string
+    :initarg :doc
+    :reader doc)
+   (code
+    :type list
+    :initarg :code
+    :reader code))
+  (:default-initargs :doc "" :code ())
+  (:documentation
+   "Organize the unit test documentation and code."))
+
+;;; NOTE: Shamelessly taken from PG's analyze-body
+(defun parse-body (body &optional doc tag)
+  "Separate the components of the body."
+  (let ((item (first body)))
+    (cond
+     ((and (listp item) (eq :tag (first item)))
+      (parse-body (rest body) doc (nconc (rest item) tag)))
+     ((and (stringp item) (not doc) (rest body))
+      (if tag
+          (values doc tag (rest body))
+          (parse-body (rest body) doc tag)))
+     (t (values doc tag body)))))
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
-  `(progn
-     (setf
-      (gethash ',name (package-table *package* t))
-      ',body)
-     ;; Return the name of the test
-     ',name))
+  (multiple-value-bind (doc tag code) (parse-body body)
+    `(progn
+       (setf
+        ;; Unit test
+        (gethash ',name (package-table *package* t))
+        (make-instance 'unit-test :doc ,doc :code ',code))
+       ;; Tags
+       (loop for tag in ',tag do
+             (pushnew
+              ',name (gethash tag (package-tags *package* t))))
+       ;; Return the name of the test
+       ',name)))
 
-;;; Remove tests from the test DB
+;;; Manage tests
+
+(defun list-tests (&optional (package *package*))
+  "Return a list of the tests in package."
+  (let ((table (package-table package)))
+    (when table
+      (loop for test-name being each hash-key in table
+            collect test-name))))
+
+(defun test-documentation (name &optional (package *package*))
+  "Return the documentation for the test."
+  (let ((unit-test (gethash name (package-table package))))
+    (if (null unit-test)
+        (warn "No code defined for test ~A in package ~S."
+              name package)
+        (doc unit-test))))
+
+(defun test-code (name &optional (package *package*))
+  "Returns the code stored for the test name."
+  (let ((unit-test (gethash name (package-table package))))
+    (if (null unit-test)
+        (warn "No code defined for test ~A in package ~S."
+              name package)
+        (code unit-test))))
 
 ;;; 0.8.1 Compatibility revision for Quicklisp
 (defun remove-all-tests (&optional (package *package*))
@@ -185,12 +270,65 @@ assertion.")
   (if (eq :all names)
       (if (null package)
           (clrhash *test-db*)
-          (remhash (find-package package) *test-db*))
+          (progn
+            (remhash (find-package package) *test-db*)
+            (remhash (find-package package) *tag-db*)))
       (let ((table (package-table package)))
         (unless (null table)
+          ;; Remove tests
           (loop for name in names
                 always (remhash name table)
                 collect name into removed
+                finally (return removed))
+          ;; Remove tests from tags
+          (loop with tags = (package-tags package)
+                for tag being each hash-key in tags
+                using (hash-value tagged-tests)
+                do
+                (setf
+                 (gethash tag tags)
+                 (set-difference tagged-tests names)))))))
+
+;;; Manage tags
+
+(defun %tests-from-all-tags (&optional (package *package*))
+  "Return all of the tests that have been tagged."
+  (loop for tests being each hash-value in (package-tags package)
+        nconc (copy-list tests) into all-tests
+        finally (return (delete-duplicates all-tests))))
+
+(defun %tests-from-tags (tags &optional (package *package*))
+  "Return the tests associated with the tags."
+  (loop with table = (package-tags package)
+        for tag in tags
+        as tests = (gethash tag table)
+        nconc (copy-list tests) into all-tests
+        finally (return (delete-duplicates all-tests))))
+
+(defun list-tags (&optional (package *package*))
+  "Return a list of the tags in package."
+  (let ((tags (package-tags package)))
+    (when tags
+      (loop for tag being each hash-key in tags
+            collect tag))))
+
+(defun tagged-tests (tags &optional (package *package*))
+  "Run the tests associated with the specified tags in package."
+  (if (eq :all tags)
+      (%tests-from-all-tags package)
+      (%tests-from-tags tags package)))
+
+(defun remove-tags (tags &optional (package *package*))
+  "Remove individual tags or entire sets."
+  (if (eq :all tags)
+      (if (null package)
+          (clrhash *tag-db*)
+          (remhash (find-package package) *tag-db*))
+      (let ((table (package-tags package)))
+        (unless (null table)
+          (loop for tag in tags
+                always (remhash tag table)
+                collect tag into removed
                 finally (return removed))))))
 
 ;;; Assert macros
@@ -386,7 +524,7 @@ assertion.")
   "Print a summary of all results."
   (let ((pass (pass results))
         (fail (fail results)))
-    (format t "Unit Test Summary~%")
+    (format t "~&Unit Test Summary~%")
     (format t " | ~D assertions total~%" (+ pass fail))
     (format t " | ~D passed~%" pass)
     (format t " | ~D failed~%" fail)
@@ -419,9 +557,9 @@ assertion.")
   (loop
    with results = (make-instance 'test-results)
    for test-name being each hash-key in (package-table package)
-   using (hash-value code)
-   if code do
-   (record-result test-name code results)
+   using (hash-value unit-test)
+   if unit-test do
+   (record-result test-name (code unit-test) results)
    else do
    (push test-name (missing-tests results))
    ;; Summarize and return the test results
@@ -435,9 +573,9 @@ assertion.")
    with table = (package-table package)
    and results = (make-instance 'test-results)
    for test-name in test-names
-   as code = (gethash test-name table)
-   if code do
-   (record-result test-name code results)
+   as unit-test = (gethash test-name table)
+   if unit-test do
+   (record-result test-name (code unit-test) results)
    else do
    (push test-name (missing-tests results))
    finally
@@ -450,13 +588,9 @@ assertion.")
       (%run-all-thunks package)
       (%run-thunks test-names package)))
 
-;;; 0.8.1 Compatibility revision for Quicklisp
-(defmacro run-all-tests (package &rest tests)
-  `(new-run-tests (or ',tests :all) ,package))
-
-;;; 0.8.1 Compatibility revision for Quicklisp
-(defmacro run-tests (&rest test-names)
-  `(new-run-tests (or ',test-names :all)))
+(defun run-tags (tags &optional (package *package*))
+  "Run the tests associated with the specified tags in package."
+  (%run-thunks (get-tagged-tests tags package) package))
 
 ;;; Useful equality predicates for tests
 
