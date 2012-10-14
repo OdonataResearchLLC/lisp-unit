@@ -71,15 +71,15 @@ functions or even macros does not require reloading any tests.
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
-           :get-tests
-           :get-test-code
-           :get-test-documentation
+           :list-tests
+           :test-code
+           :test-documentation
            :remove-tests
            :run-tests
            :use-debugger)
   ;; Functions for managing tags
-  (:export :get-tags
-           :get-tagged-tests
+  (:export :list-tags
+           :tagged-tests
            :remove-tags
            :run-tags)
   ;; Functions for reporting test results
@@ -237,14 +237,14 @@ assertion.")
 
 ;;; Manage tests
 
-(defun get-tests (&optional (package *package*))
+(defun list-tests (&optional (package *package*))
   "Return a list of the tests in package."
   (let ((table (package-table package)))
     (when table
       (loop for test-name being each hash-key in table
             collect test-name))))
 
-(defun get-test-documentation (name &optional (package *package*))
+(defun test-documentation (name &optional (package *package*))
   "Return the documentation for the test."
   (let ((unit-test (gethash name (package-table package))))
     (if (null unit-test)
@@ -252,7 +252,7 @@ assertion.")
               name package)
         (doc unit-test))))
 
-(defun get-test-code (name &optional (package *package*))
+(defun test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
   (let ((unit-test (gethash name (package-table package))))
     (if (null unit-test)
@@ -265,13 +265,24 @@ assertion.")
   (if (eq :all names)
       (if (null package)
           (clrhash *test-db*)
-          (remhash (find-package package) *test-db*))
+          (progn
+            (remhash (find-package package) *test-db*)
+            (remhash (find-package package) *tag-db*)))
       (let ((table (package-table package)))
         (unless (null table)
+          ;; Remove tests
           (loop for name in names
                 always (remhash name table)
                 collect name into removed
-                finally (return removed))))))
+                finally (return removed))
+          ;; Remove tests from tags
+          (loop with tags = (package-tags package)
+                for tag being each hash-key in tags
+                using (hash-value tagged-tests)
+                do
+                (setf
+                 (gethash tag tags)
+                 (set-difference tagged-tests names))))))))
 
 ;;; Manage tags
 
@@ -289,14 +300,14 @@ assertion.")
         nconc (copy-list tests) into all-tests
         finally (return (delete-duplicates all-tests))))
 
-(defun get-tags (&optional (package *package*))
+(defun list-tags (&optional (package *package*))
   "Return a list of the tags in package."
   (let ((tags (package-tags package)))
     (when tags
       (loop for tag being each hash-key in tags
             collect tag))))
 
-(defun get-tagged-tests (tags &optional (package *package*))
+(defun tagged-tests (tags &optional (package *package*))
   "Run the tests associated with the specified tags in package."
   (if (eq :all tags)
       (%tests-from-all-tags package)
