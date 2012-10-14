@@ -144,8 +144,9 @@ assertion.")
 
 (defmethod print-failure ((type (eql :error))
                           form expected actual extras)
-  (format t "~& | ~@[Should have signalled ~{~S~^; ~}" expected)
-  (format t " but saw~] ~{~S~^; ~}" actual))
+  (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
+          expected)
+  (format t " ~{~S~^; ~}" actual))
 
 (defmethod print-failure ((type (eql :macro))
                           form expected actual extras)
@@ -282,7 +283,7 @@ assertion.")
                 do
                 (setf
                  (gethash tag tags)
-                 (set-difference tagged-tests names))))))))
+                 (set-difference tagged-tests names)))))))
 
 ;;; Manage tags
 
