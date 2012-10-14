@@ -582,7 +582,7 @@ assertion.")
    (summarize-results results)
    (return results)))
 
-(defun new-run-tests (test-names &optional (package *package*))
+(defun run-tests (test-names &optional (package *package*))
   "Run the specified tests in package."
   (if (eq :all test-names)
       (%run-all-thunks package)
