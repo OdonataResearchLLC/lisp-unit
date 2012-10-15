@@ -224,11 +224,11 @@ assertion.")
 (defmacro define-test (name &body body)
   "Store the test in the test database."
   (multiple-value-bind (doc tag code) (parse-body body)
-    `(progn
+    `(let ((doc (or ,doc (string ',name))))
        (setf
         ;; Unit test
         (gethash ',name (package-table *package* t))
-        (make-instance 'unit-test :doc ,doc :code ',code))
+        (make-instance 'unit-test :doc doc :code ',code))
        ;; Tags
        (loop for tag in ',tag do
              (pushnew
