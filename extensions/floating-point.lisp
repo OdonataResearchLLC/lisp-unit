@@ -372,65 +372,69 @@ comparison of the relative error is less than epsilon."
         p))
 
 ;;; (NORM data) => float
-(defun %seq-1-norm (data)
-  "Return the Taxicab norm of the sequence."
-  ;; FIXME : Use the LOOP.
-  (reduce (lambda (x y) (+ x (abs y)))
-          data :initial-value 0))
 
-(defun %seq-2-norm (data)
-  "Return the Euclidean norm of the sequence."
+(defgeneric %norm (data measure)
+  (:documentation
+   "Return the norm of the data according to measure."))
+
+(defmethod %norm ((data list) (measure (eql 1)))
+  "Return the Taxicab norm of the list."
+  (loop for item in data sum (abs item)))
+
+(defmethod %norm ((data vector) (measure (eql 1)))
+  "Return the Taxicab norm of the vector."
+  (loop for item across data sum (abs item)))
+
+(defmethod %norm ((data list) (measure (eql 2)))
+  "Return the Euclidean norm of the list."
   (multiple-value-bind (scale sumsq)
       (sumsq (map-into (make-array (length data)) #'abs data))
     (* scale (sqrt sumsq))))
 
-(defun %seq-p-norm (data p)
-  "Return the p norm of the sequence."
+(defmethod %norm ((data vector) (measure (eql 2)))
+  "Return the Euclidean norm of the vector."
+  (multiple-value-bind (scale sumsq)
+      (sumsq (map-into (make-array (length data)) #'abs data))
+    (* scale (sqrt sumsq))))
+
+(defmethod %norm ((data list) (measure integer))
+  "Return the Euclidean norm of the list."
   (multiple-value-bind (scale sump)
-      (sump (map-into (make-array (length data)) #'abs data) p)
-    (* scale (expt sump (/ p)))))
+      (sump (map-into (make-array (length data)) #'abs data)
+            measure)
+    (* scale (expt sump (/ measure)))))
 
-(defun %seq-inf-norm (data)
-  "Return the infinity, or maximum, norm of the sequence."
-  ;; FIXME : Use the LOOP.
-  (reduce (lambda (x y) (max x (abs y)))
-          data :initial-value 0))
+(defmethod %norm ((data vector) (measure integer))
+  "Return the Euclidean norm of the vector."
+  (multiple-value-bind (scale sump)
+      (sump (map-into (make-array (length data)) #'abs data)
+            measure)
+    (* scale (expt sump (/ measure)))))
 
-(defun %seq-norm (data measure)
-  "Return the norm of the sequence according to the measure."
-  (cond
-    ((equalp measure 1)
-     (%seq-1-norm data))
-    ((equalp measure 2)
-     (%seq-2-norm data))
-    ((numberp measure)
-     (%seq-p-norm data measure))
-    ((equalp measure :infinity)
-     (%seq-inf-norm data))
-    (t (error "Unrecognized norm, ~A." measure))))
+(defmethod %norm ((data list) (measure (eql :infinity)))
+  "Return the infinity, or maximum, norm of the list."
+  (loop for item in data maximize (abs item)))
+
+(defmethod %norm ((data vector) (measure (eql :infinity)))
+  "Return the infinity, or maximum, norm of the vector."
+  (loop for item across data maximize (abs item)))
 
 (defmethod norm ((data list) &optional (measure *measure*))
   "Return the norm of the list according to the measure."
-  (%seq-norm data measure))
+  (%norm data measure))
 
 (defmethod norm ((data vector) &optional (measure *measure*))
   "Return the norm of the vector according to the measure."
-  (%seq-norm data measure))
+  (%norm data measure))
 
 (defmethod norm ((data array) &optional (measure *measure*))
   "Return the entrywise norm of the array according to the measure."
-  (let ((flat-data (make-array (array-total-size data)
-                               :element-type (array-element-type data)
-                               :displaced-to data)))
-    (cond
-      ((and (numberp measure) (< 0 measure))
-       (warn "Measure ~D results in an entrywise p-norm." measure)
-       (%seq-p-norm flat-data measure))
-      ((equalp measure :frobenius)
-       (%seq-2-norm flat-data))
-      ((equalp measure :max)
-       (%seq-inf-norm flat-data))
-      (t (error "Unrecognized norm, ~A." measure)))))
+  (%norm
+   (make-array
+    (array-total-size data)
+    :element-type (array-element-type data)
+    :displaced-to data)
+   measure))
 
 ;;; (RELATIVE-ERROR-NORM exact approximate measure) => float
 (defun %relative-error-norm (exact approximate measure)

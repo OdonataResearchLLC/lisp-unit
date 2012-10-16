@@ -18,7 +18,7 @@ loaded using either [Quicklisp][] or [ASDF][].
 2. Load using [Quicklisp][] : `(ql:quickload :lisp-unit)`.
 3. Load using [ASDF][] : `(asdf:load-system :lisp-unit)`.
 
-## Version 0.9.0 Features
+## Version 0.9.2 Features
 
 ### Simplified Interface
 
