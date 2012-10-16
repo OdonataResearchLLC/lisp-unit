@@ -131,7 +131,7 @@ assertion.")
 
 (defmethod print-failure :around (type form expected actual extras)
   "Failure header and footer output."
-  (format t " | Failed Form: ~S" form)
+  (format t "~& | Failed Form: ~S" form)
   (call-next-method)
   (when extras
     (format t "~{~& | ~S => ~S~}~%" (funcall extras)))
@@ -261,10 +261,6 @@ assertion.")
               name package)
         (code unit-test))))
 
-;;; 0.8.1 Compatibility revision for Quicklisp
-(defun remove-all-tests (&optional (package *package*))
-  (remove-tests :all package))
-
 (defun remove-tests (names &optional (package *package*))
   "Remove individual tests or entire sets."
   (if (eq :all names)
@@ -309,8 +305,7 @@ assertion.")
   "Return a list of the tags in package."
   (let ((tags (package-tags package)))
     (when tags
-      (loop for tag being each hash-key in tags
-            collect tag))))
+      (loop for tag being each hash-key in tags collect tag))))
 
 (defun tagged-tests (tags &optional (package *package*))
   "Run the tests associated with the specified tags in package."
@@ -411,11 +406,11 @@ assertion.")
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
   "Perform the assertion and record the results."
-  (let ((expected (multiple-value-list (funcall expected-thunk)))
-        (actual (multiple-value-list (funcall code-thunk)))
-        (passed nil))
+  (let* ((expected (multiple-value-list (funcall expected-thunk)))
+         (actual (multiple-value-list (funcall code-thunk)))
+         (passed (test-passed-p type expected actual test)))
     ;; Count the assertion
-    (if (setq passed (test-passed-p type expected actual test))
+    (if passed
         (incf *pass*)
         (incf *fail*))
     ;; Report the assertion
