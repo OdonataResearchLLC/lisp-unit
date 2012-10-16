@@ -585,7 +585,7 @@ assertion.")
 
 (defun run-tags (tags &optional (package *package*))
   "Run the tests associated with the specified tags in package."
-  (%run-thunks (get-tagged-tests tags package) package))
+  (%run-thunks (tagged-tests tags package) package))
 
 ;;; Useful equality predicates for tests
 
