@@ -296,27 +296,33 @@ comparison of the relative error is less than epsilon."
 (defmethod sumsq ((data list))
   "Return the scaling parameter and the sum of the squares of the ~
    list."
-  (let ((scale 0) (sumsq 1)
+  (let ((scale 0)
+        (sumsq 1)
         (abs-val nil))
     (dolist (elm data (values scale sumsq))
-      (when (< 0 (setf abs-val (abs elm)))
+      (when (plusp (setq abs-val (abs elm)))
         (if (< scale abs-val)
-            (setf sumsq (1+ (* sumsq (expt (/ scale abs-val) 2)))
-                  scale abs-val)
-            (incf sumsq (expt (/ elm scale) 2)))))))
+            (setq
+             sumsq (1+ (* sumsq (expt (/ scale abs-val) 2)))
+             scale abs-val)
+            (setq sumsq (+ sumsq (expt (/ elm scale) 2))))))))
 
 (defmethod sumsq ((data vector))
   "Return the scaling parameter and the sum of the squares of the ~
    vector."
-  (let ((scale 0) (sumsq 1)
-        (size (length data))
-        (abs-val nil))
+  (let ((scale 0)
+        (sumsq 1)
+        (abs-val nil)
+        (size (length data)))
     (dotimes (index size (values scale sumsq))
-      (when (< 0 (setf abs-val (abs (svref data index))))
+      (when (plusp (setq abs-val (abs (svref data index))))
         (if (< scale abs-val)
-            (setf sumsq (1+ (* sumsq (expt (/ scale abs-val) 2)))
-                  scale abs-val)
-            (incf sumsq (expt (/ (svref data index) scale) 2)))))))
+            (setq
+             sumsq (1+ (* sumsq (expt (/ scale abs-val) 2)))
+             scale abs-val)
+            (setq
+             sumsq
+             (+ sumsq (expt (/ (svref data index) scale) 2))))))))
 
 (defmethod sumsq ((data array))
   "Return the scaling parameter and the sum of the squares of the ~
@@ -329,27 +335,33 @@ comparison of the relative error is less than epsilon."
 (defmethod sump ((data list) (p real))
   "Return the scaling parameter and the sum of the powers of p of the ~
    data."
-  (let ((scale 0) (sump 1)
+  (let ((scale 0)
+        (sump 1)
         (abs-val nil))
     (dolist (elm data (values scale sump))
-      (when (< 0 (setf abs-val (abs elm)))
+      (when (plusp (setq abs-val (abs elm)))
         (if (< scale abs-val)
-            (setf sump  (1+ (* sump (expt (/ scale abs-val) p)))
-                  scale abs-val)
-            (incf sump (expt (/ elm scale) p)))))))
+            (setq
+             sump (1+ (* sump (expt (/ scale abs-val) p)))
+             scale abs-val)
+            (setq sump (+ sump (expt (/ elm scale) p))))))))
 
 (defmethod sump ((data vector) (p real))
   "Return the scaling parameter and the sum of the powers of p of the ~
    vector."
-  (let ((scale 0) (sump 1)
-        (size (length data))
-        (abs-val nil))
+  (let ((scale 0)
+        (sump 1)
+        (abs-val nil)
+        (size (length data)))
     (dotimes (index size (values scale sump))
-      (when (< 0 (setf abs-val (abs (svref data index))))
+      (when (plusp (setq abs-val (abs (svref data index))))
         (if (< scale abs-val)
-            (setf sump  (1+ (* sump (expt (/ scale abs-val) p)))
-                  scale abs-val)
-            (incf sump (expt (/ (svref data index) scale) p)))))))
+            (setq
+             sump (1+ (* sump (expt (/ scale abs-val) p)))
+             scale abs-val)
+            (setq
+             sump
+             (+ sump (expt (/ (svref data index) scale) p))))))))
 
 (defmethod sump ((data array) (p real))
   "Return the scaling parameter and the sum of the powers of p of the ~
