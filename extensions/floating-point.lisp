@@ -131,26 +131,22 @@
     ((complex long-float)   (* 2L0 long-float-epsilon))
     (t 0)))
 
-;;; FIXME : Use the LOOP
 (defmethod default-epsilon ((value list))
   "Return the default epsilon based on contents of the list."
-  (reduce (lambda (x y) (max x (default-epsilon y)))
-          value :initial-value 0))
+  (loop for val in value maximize (default-epsilon val)))
 
-;;; FIXME : Use the LOOP
 (defmethod default-epsilon ((value vector))
   "Return the default epsilon based on the contents of the vector."
-  (reduce (lambda (x y) (max x (default-epsilon y)))
-          value :initial-value 0))
+  (loop for val across value maximize (default-epsilon val)))
 
-;;; FIXME : Use the LOOP
 (defmethod default-epsilon ((value array))
   "Return the default epsilon based on the contents of the array."
-  (reduce (lambda (x y) (max x (default-epsilon y)))
-          (make-array (array-total-size value)
-                      :element-type (array-element-type value)
-                      :displaced-to value)
-          :initial-value 0))
+  (loop for val across
+        (make-array
+         (array-total-size value)
+         :element-type (array-element-type value)
+         :displaced-to value)
+        maximize (default-epsilon val)))
 
 #|
   (RELATIVE-ERROR x y) => float
