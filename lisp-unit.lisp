@@ -103,6 +103,9 @@ functions or even macros does not require reloading any tests.
 
 ;;; Global options
 
+(defparameter *output-format* :lisp-unit
+  "Print the output using the lisp-unit format.")
+
 (defparameter *print-summary* nil
   "Print a summary of the pass, fail, and error count if non-nil.")
 
@@ -125,11 +128,12 @@ assertion.")
 
 ;;; Failure control strings
 
-(defgeneric print-failure (type form expected actual extras)
+(defgeneric print-failure (format type form expected actual extras)
   (:documentation
    "Report the details of the failure assertion."))
 
-(defmethod print-failure :around (type form expected actual extras)
+(defmethod print-failure :around
+  ((format (eql :lisp-unit)) type form expected actual extras)
   "Failure header and footer output."
   (format t "~& | Failed Form: ~S" form)
   (call-next-method)
@@ -138,27 +142,35 @@ assertion.")
   (format t "~& |~%")
   type)
 
-(defmethod print-failure (type form expected actual extras)
+(defmethod print-failure ((format (eql :lisp-unit))
+                          type form expected actual extras)
   (format t "~& | Expected ~{~S~^; ~} " expected)
   (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" actual))
 
-(defmethod print-failure ((type (eql :error))
+(defmethod print-failure ((format (eql :lisp-unit))
+                          (type (eql :error))
                           form expected actual extras)
   (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
           expected)
   (format t " ~{~S~^; ~}" actual))
 
-(defmethod print-failure ((type (eql :macro))
+(defmethod print-failure ((format (eql :lisp-unit))
+                          (type (eql :macro))
                           form expected actual extras)
   (format t "~& | Should have expanded to ~{~S~^; ~} " expected)
   (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
 
-(defmethod print-failure ((type (eql :output))
+(defmethod print-failure ((format (eql :lisp-unit))
+                          (type (eql :output))
                           form expected actual extras)
   (format t "~& | Should have printed ~{~S~^; ~} " expected)
   (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
 
-(defun print-error (condition)
+(defgeneric print-error (format condition)
+  (:documentation
+   "Print the error condition."))
+
+(defmethod print-error ((format (eql :lisp-unit)) condition)
   "Print the error condition."
   (let ((*print-escape* nil))
     (format t "~& | Execution error:~% | ~W" condition)
@@ -415,7 +427,8 @@ assertion.")
         (incf *fail*))
     ;; Report the assertion
     (when (and (not passed) *print-failures*)
-      (print-failure type form expected actual extras))
+      (print-failure
+       *output-format* type form expected actual extras))
     ;; Return the result
     passed))
 
@@ -539,7 +552,7 @@ assertion.")
     (handler-case (run-code code)
       (error (condition)
         (when *print-errors*
-          (print-error condition))
+          (print-error *output-format* condition))
         (if (use-debugger-p condition)
             condition
             (return-from run-test-thunk
