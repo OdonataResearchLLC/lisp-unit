@@ -536,14 +536,15 @@ assertion.")
 (defun run-test-thunk (code)
   (let ((*pass* 0)
         (*fail* 0))
-    (handler-case (run-code code)
-      (error (condition)
-        (when *print-errors*
-          (print-error condition))
-        (if (use-debugger-p condition)
-            condition
-            (return-from run-test-thunk
-              (values *pass* *fail* :error)))))
+    (handler-bind
+        ((error (lambda (condition)
+                  (when *print-errors*
+                    (print-error condition))
+                  (if (use-debugger-p condition)
+                      condition
+                      (return-from run-test-thunk
+                        (values *pass* *fail* :error condition))))))
+      (run-code code))
     ;; Return the result count
     (values *pass* *fail* nil)))
 
