@@ -519,14 +519,13 @@ assertion.")
       (incf (fail results) fail)
       (push test-name (failed-tests results)))
     ;; Count errors and record name
-    (when (eq :error exerr)
+    (when exerr
       (incf (exerr results))
       (push test-name (error-tests results)))
     ;; Print a summary of the results
     (when (or *print-summary* *print-failures* *print-errors*)
       (print-summary
-       test-name pass fail
-       (when (eq :error exerr) 1)))))
+       test-name pass fail (when exerr 1)))))
 
 (defun summarize-results (results)
   "Print a summary of all results."
@@ -549,14 +548,15 @@ assertion.")
 (defun run-test-thunk (code)
   (let ((*pass* 0)
         (*fail* 0))
-    (handler-case (run-code code)
-      (error (condition)
-        (when *print-errors*
-          (print-error *output-format* condition))
-        (if (use-debugger-p condition)
-            condition
-            (return-from run-test-thunk
-              (values *pass* *fail* :error)))))
+    (handler-bind
+        ((error (lambda (condition)
+                  (when *print-errors*
+                    (print-error condition))
+                  (if (use-debugger-p condition)
+                      condition
+                      (return-from run-test-thunk
+                        (values *pass* *fail* condition))))))
+      (run-code code))
     ;; Return the result count
     (values *pass* *fail* nil)))
 
