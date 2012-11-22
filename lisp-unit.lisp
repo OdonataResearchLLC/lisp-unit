@@ -642,6 +642,8 @@ assertion.")
    (push test-name (missing-tests results))
    ;; Summarize and return the test results
    finally
+   (when *print-failures* (print-failure results))
+   (when *print-errors* (print-error results))
    (summarize-results results)
    (return results)))
 
@@ -657,6 +659,8 @@ assertion.")
    else do
    (push test-name (missing-tests results))
    finally
+   (when *print-failures* (print-failure results))
+   (when *print-errors* (print-error results))
    (summarize-results results)
    (return results)))
 
