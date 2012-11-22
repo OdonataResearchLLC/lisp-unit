@@ -723,9 +723,15 @@ assertion.")
 (defmethod print-error ((result test-result))
   "Print the error condition."
   (let ((*print-escape* nil))
-    (format t "~& | Execution error:~% | ~W" (condition result))
+    (format t "~& | Execution error:~% | ~W" (exerr result))
     (format t "~& |~%")
     (print-summary result)))
+
+(defmethod print-error ((results test-results-db))
+  "Print all of the error tests."
+  (loop with db = (database results)
+        for test in (error-tests results) do
+        (print-error (gethash test db))))
 
 ;;; Useful equality predicates for tests
 
