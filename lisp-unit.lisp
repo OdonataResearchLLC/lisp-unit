@@ -123,58 +123,6 @@ assertion.")
     (y-or-n-p "~A -- debug?" condition))
    (*use-debugger*)))
 
-;;; Failure control strings
-
-(defgeneric print-failure (result)
-  (:documentation
-   "Report the results of the failed assertion."))
-
-(defmethod print-failure :around (result)
-  "Failure header and footer output."
-  (format t "~& | Failed Form: ~S" (form result))
-  (call-next-method)
-  (when (extras result)
-    (format t "~{~& | ~S => ~S~}~%"
-            (funcall (extras result))))
-  (format t "~& |~%")
-  (class-name result))
-
-(defmethod print-failure (result)
-  (format t "~& | Expected ~{~S~^; ~} " (expected result))
-  (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" (actual result)))
-
-(defmethod print-failure ((result error-result))
-  (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
-          (expected result))
-  (format t " ~{~S~^; ~}" (actual result)))
-
-(defmethod print-failure ((result macro-result))
-  (format t "~& | Should have expanded to ~{~S~^; ~} "
-          (expected result))
-  (format t "~<~%~:;but saw ~{~S~^; ~}~>" (actual result)))
-
-(defmethod print-failure ((result output-result))
-  (format t "~& | Should have printed ~{~S~^; ~} "
-          (expected result))
-  (format t "~<~%~:;but saw ~{~S~^; ~}~>"
-          (actual result)))
-
-(defgeneric print-error (condition)
-  (:documentation
-   "Print the error condition."))
-
-(defmethod print-error (condition)
-  "Print the error condition."
-  (let ((*print-escape* nil))
-    (format t "~& | Execution error:~% | ~W" condition)
-    (format t "~& |~%")))
-
-(defun print-summary (name pass fail &optional exerr)
-  "Print a summary of the test results."
-  (format t "~&~A: ~S assertions passed, ~S failed"
-          name (length pass) (length fail))
-  (format t "~@[, ~S execution errors~].~2%" exerr))
-
 ;;; Global unit test database
 
 (defparameter *test-db* (make-hash-table :test #'eq)
@@ -199,6 +147,8 @@ assertion.")
    (create
     (setf (gethash package *tag-db*) (make-hash-table)))
    (t (warn "No tags defined for package: ~S" package))))
+
+;;; Unit test definition
 
 (defclass unit-test ()
   ((doc
@@ -534,7 +484,65 @@ assertion.")
     ;; Return the result
     (passed result)))
 
-;;; Results
+;;; Unit test results
+
+(defclass test-result ()
+  ((name
+    :type symbol
+    :initarg :name
+    :reader name)
+   (pass
+    :type list
+    :initarg :pass
+    :reader pass)
+   (fail
+    :type list
+    :initarg :fail
+    :reader fail)
+   (exerr
+    :type condition
+    :initarg :exerr
+    :reader exerr))
+  (:default-initargs :exerr nil)
+  (:documentation
+   "Store the results of the unit test."))
+
+(defun print-summary (test-result)
+  "Print a summary of the test result."
+  (format t "~&~A: ~S assertions passed, ~S failed"
+          (name test-result)
+          (length (pass test-result))
+          (length (fail test-result)))
+  (format t "~@[, ~S execution errors~].~2%"
+          (exerr test-result)))
+
+(defun run-code (code)
+  "Run the code to test the assertions."
+  (funcall (coerce `(lambda () ,@code) 'function)))
+
+(defun run-test-thunk (name code)
+  (let ((*pass* ())
+        (*fail* ()))
+    (handler-bind
+        ((error
+          (lambda (condition)
+            (if (use-debugger-p condition)
+                condition
+                (return-from run-test-thunk
+                  (make-instance
+                   'test-result
+                   :name name
+                   :pass *pass*
+                   :fail *fail*
+                   :exerr condition))))))
+      (run-code code))
+    ;; Return the result count
+    (make-instance 'test-result
+                   :name name
+                   :pass *pass*
+                   :fail *fail*)))
+
+;;; Test results database
 
 (defclass test-results-db ()
   ((database
@@ -585,7 +593,7 @@ assertion.")
 
 (defun record-result (test-name code results)
   "Run the test code and record the result."
-  (let ((result (run-test-thunk code)))
+  (let ((result (run-test-thunk test-name code)))
     ;; Store the result
     (setf (gethash test-name (database results)) result)
     ;; Count passed tests
@@ -613,47 +621,6 @@ assertion.")
             (length (missing-tests results)))))
 
 ;;; Run the tests
-
-(defclass test-result ()
-  ((pass
-    :type list
-    :initarg :pass
-    :reader pass)
-   (fail
-    :type list
-    :initarg :fail
-    :reader fail)
-   (exerr
-    :type condition
-    :initarg :exerr
-    :reader exerr))
-  (:default-initargs :exerr nil)
-  (:documentation
-   "Store the results of the unit test."))
-
-(defun run-code (code)
-  "Run the code to test the assertions."
-  (funcall (coerce `(lambda () ,@code) 'function)))
-
-(defun run-test-thunk (code)
-  (let ((*pass* ())
-        (*fail* ()))
-    (handler-bind
-        ((error
-          (lambda (condition)
-            (if (use-debugger-p condition)
-                condition
-                (return-from run-test-thunk
-                  (make-instance
-                   'test-result
-                   :pass *pass*
-                   :fail *fail*
-                   :exerr condition))))))
-      (run-code code))
-    ;; Return the result count
-    (make-instance 'test-result
-                   :pass *pass*
-                   :fail *fail*)))
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
@@ -694,6 +661,55 @@ assertion.")
 (defun run-tags (tags &optional (package *package*))
   "Run the tests associated with the specified tags in package."
   (%run-thunks (tagged-tests tags package) package))
+
+;;; Print failures
+
+(defgeneric print-failure (result)
+  (:documentation
+   "Report the results of the failed assertion."))
+
+(defmethod print-failure :around ((result assert-result))
+  "Failure header and footer output."
+  (format t "~& | Failed Form: ~S" (form result))
+  (call-next-method)
+  (when (extras result)
+    (format t "~{~& | ~S => ~S~}~%"
+            (funcall (extras result))))
+  (format t "~& |~%")
+  (class-name result))
+
+(defmethod print-failure ((result assert-result))
+  (format t "~& | Expected ~{~S~^; ~} " (expected result))
+  (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" (actual result)))
+
+(defmethod print-failure ((result error-result))
+  (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
+          (expected result))
+  (format t " ~{~S~^; ~}" (actual result)))
+
+(defmethod print-failure ((result macro-result))
+  (format t "~& | Should have expanded to ~{~S~^; ~} "
+          (expected result))
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>" (actual result)))
+
+(defmethod print-failure ((result output-result))
+  (format t "~& | Should have printed ~{~S~^; ~} "
+          (expected result))
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>"
+          (actual result)))
+
+;;; Print errors
+
+(defgeneric print-error (result)
+  (:documentation
+   "Print the error condition."))
+
+(defmethod print-error ((result test-result))
+  "Print the error condition."
+  (let ((*print-escape* nil))
+    (format t "~& | Execution error:~% | ~W" (condition result))
+    (format t "~& |~%")
+    (print-summary result)))
 
 ;;; Useful equality predicates for tests
 
