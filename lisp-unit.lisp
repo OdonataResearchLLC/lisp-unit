@@ -390,7 +390,12 @@ assertion.")
   (with-slots (actual expected) self
     (setf
      actual (multiple-value-list (funcall actual))
-     expected (multiple-value-list (funcall expected)))))
+     expected (multiple-value-list (funcall expected))))
+  ;; Generate extras
+  (when (slot-boundp self 'extras)
+    (setf
+     (slot-value self 'extras)
+     (funcall (slot-value self 'extras)))))
 
 (defclass equal-result (assert-result)
   ()
@@ -676,8 +681,7 @@ assertion.")
   (format t "~& | Failed Form: ~S" (form result))
   (call-next-method)
   (when (extras result)
-    (format t "~{~& | ~S => ~S~}~%"
-            (funcall (extras result))))
+    (format t "~{~& | ~S => ~S~}~%" (extras result)))
   (format t "~& |~%")
   (class-name (class-of result)))
 
