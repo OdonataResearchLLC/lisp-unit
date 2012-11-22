@@ -513,8 +513,11 @@ assertion.")
           (name test-result)
           (length (pass test-result))
           (length (fail test-result)))
-  (format t "~@[, ~S execution errors~].~2%"
-          (exerr test-result)))
+  (if (exerr test-result)
+      (format t ", and an execution error.")
+      (write-char #\.))
+  (terpri)
+  (terpri))
 
 (defun run-code (code)
   "Run the code to test the assertions."
@@ -676,7 +679,7 @@ assertion.")
     (format t "~{~& | ~S => ~S~}~%"
             (funcall (extras result))))
   (format t "~& |~%")
-  (class-name result))
+  (class-name (class-of result)))
 
 (defmethod print-failure ((result assert-result))
   (format t "~& | Expected ~{~S~^; ~} " (expected result))
@@ -697,6 +700,19 @@ assertion.")
           (expected result))
   (format t "~<~%~:;but saw ~{~S~^; ~}~>"
           (actual result)))
+
+(defmethod print-failure ((result test-result))
+  "Print the failed assertions in the unit test."
+  (loop for fail in (fail result) do
+        (print-failure fail)
+        finally
+        (print-summary result)))
+
+(defmethod print-failure ((results test-results-db))
+  "Print all of the failure tests."
+  (loop with db = (database results)
+        for test in (failed-tests results) do
+        (print-failure (gethash test db))))
 
 ;;; Print errors
 
