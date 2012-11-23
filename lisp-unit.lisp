@@ -87,6 +87,8 @@ functions or even macros does not require reloading any tests.
            :failed-tests
            :error-tests
            :missing-tests
+           :print-failures
+           :print-errors
            :summarize-results)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
@@ -616,8 +618,10 @@ assertion.")
       (incf (exerr results))
       (push test-name (error-tests results)))
     ;; Running output
-    (when *print-failures* (print-failure result))
-    (when *print-errors* (print-error result))))
+    (when *print-failures* (print-failures result))
+    (when *print-errors* (print-errors result))
+    (when (or *print-summary* *print-failures* *print-errors*)
+      (print-summary result))))
 
 (defun summarize-results (results)
   "Print a summary of all results."
@@ -675,11 +679,11 @@ assertion.")
 
 ;;; Print failures
 
-(defgeneric print-failure (result)
+(defgeneric print-failures (result)
   (:documentation
    "Report the results of the failed assertion."))
 
-(defmethod print-failure :around ((result assert-result))
+(defmethod print-failures :around ((result assert-result))
   "Failure header and footer output."
   (format t "~& | Failed Form: ~S" (form result))
   (call-next-method)
@@ -688,59 +692,62 @@ assertion.")
   (format t "~& |~%")
   (class-name (class-of result)))
 
-(defmethod print-failure ((result assert-result))
+(defmethod print-failures ((result assert-result))
   (format t "~& | Expected ~{~S~^; ~} " (expected result))
   (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" (actual result)))
 
-(defmethod print-failure ((result error-result))
+(defmethod print-failures ((result error-result))
   (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
           (expected result))
   (format t " ~{~S~^; ~}" (actual result)))
 
-(defmethod print-failure ((result macro-result))
+(defmethod print-failures ((result macro-result))
   (format t "~& | Should have expanded to ~{~S~^; ~} "
           (expected result))
   (format t "~<~%~:;but saw ~{~S~^; ~}~>" (actual result)))
 
-(defmethod print-failure ((result output-result))
+(defmethod print-failures ((result output-result))
   (format t "~& | Should have printed ~{~S~^; ~} "
           (expected result))
   (format t "~<~%~:;but saw ~{~S~^; ~}~>"
           (actual result)))
 
-(defmethod print-failure ((result test-result))
+(defmethod print-failures ((result test-result))
   "Print the failed assertions in the unit test."
   (loop for fail in (fail result) do
-        (print-failure fail)
-        finally
-        (print-summary result)))
+        (print-failures fail)))
 
-(defmethod print-failure ((results test-results-db))
+(defmethod print-failures ((results test-results-db))
   "Print all of the failure tests."
   (loop with db = (database results)
-        for test in (failed-tests results) do
-        (print-failure (gethash test db))))
+        for test in (failed-tests results)
+        as result = (gethash test db)
+        do
+        (print-failures result)
+        (print-summary result)))
 
 ;;; Print errors
 
-(defgeneric print-error (result)
+(defgeneric print-errors (result)
   (:documentation
    "Print the error condition."))
 
-(defmethod print-error ((result test-result))
+(defmethod print-errors ((result test-result))
   "Print the error condition."
   (let ((exerr (exerr result))
         (*print-escape* nil))
     (when exerr
       (format t "~& | Execution error:~% | ~W" (exerr result))
-      (format t "~& |~%"))
-    (print-summary result)))
+      (format t "~& |~%"))))
 
-(defmethod print-error ((results test-results-db))
+(defmethod print-errors ((results test-results-db))
   "Print all of the error tests."
   (loop with db = (database results)
-        for test in (error-tests results) do
-        (print-error (gethash test db))))
+        for test in (error-tests results)
+        as result = (gethash test db)
+        do
+        (print-errors result)
+        (print-summary result)))
 
 ;;; Useful equality predicates for tests
 
