@@ -660,7 +660,7 @@ assertion.")
   "Run the list of test thunks in the package."
   (loop
    with table = (package-table package)
-   and results = (make-instance 'test-results)
+   and results = (make-instance 'test-results-db)
    for test-name in test-names
    as unit-test = (gethash test-name table)
    if unit-test do
