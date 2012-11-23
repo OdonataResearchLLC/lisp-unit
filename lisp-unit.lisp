@@ -614,7 +614,10 @@ assertion.")
     ;; Count errors and record the name
     (when (exerr result)
       (incf (exerr results))
-      (push test-name (error-tests results)))))
+      (push test-name (error-tests results)))
+    ;; Running output
+    (when *print-failures* (print-failure result))
+    (when *print-errors* (print-error result))))
 
 (defun summarize-results (results)
   "Print a summary of all results."
@@ -642,8 +645,6 @@ assertion.")
    (push test-name (missing-tests results))
    ;; Summarize and return the test results
    finally
-   (when *print-failures* (print-failure results))
-   (when *print-errors* (print-error results))
    (summarize-results results)
    (return results)))
 
@@ -659,8 +660,6 @@ assertion.")
    else do
    (push test-name (missing-tests results))
    finally
-   (when *print-failures* (print-failure results))
-   (when *print-errors* (print-error results))
    (summarize-results results)
    (return results)))
 
@@ -730,9 +729,11 @@ assertion.")
 
 (defmethod print-error ((result test-result))
   "Print the error condition."
-  (let ((*print-escape* nil))
-    (format t "~& | Execution error:~% | ~W" (exerr result))
-    (format t "~& |~%")
+  (let ((exerr (exerr result))
+        (*print-escape* nil))
+    (when exerr
+      (format t "~& | Execution error:~% | ~W" (exerr result))
+      (format t "~& |~%"))
     (print-summary result)))
 
 (defmethod print-error ((results test-results-db))
