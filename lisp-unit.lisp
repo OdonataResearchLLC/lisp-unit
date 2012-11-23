@@ -103,6 +103,10 @@ functions or even macros does not require reloading any tests.
 (defparameter *fail* ()
   "The failed assertion results.")
 
+(defun reset-counters ()
+  "Reset the counters to empty lists."
+  (setf *pass* () *fail* ()))
+
 ;;; Global options
 
 (defparameter *print-summary* nil
@@ -669,12 +673,14 @@ assertion.")
 
 (defun run-tests (test-names &optional (package *package*))
   "Run the specified tests in package."
+  (reset-counters)
   (if (eq :all test-names)
       (%run-all-thunks package)
       (%run-thunks test-names package)))
 
 (defun run-tags (tags &optional (package *package*))
   "Run the tests associated with the specified tags in package."
+  (reset-counters)
   (%run-thunks (tagged-tests tags package) package))
 
 ;;; Print failures
