@@ -737,7 +737,7 @@ assertion.")
   (let ((exerr (exerr result))
         (*print-escape* nil))
     (when exerr
-      (format t "~& | Execution error:~% | ~W" (exerr result))
+      (format t "~& | Execution error:~% | ~W" exerr)
       (format t "~& |~%"))))
 
 (defmethod print-errors ((results test-results-db))
