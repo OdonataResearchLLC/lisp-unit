@@ -129,6 +129,10 @@ assertion.")
     (y-or-n-p "~A -- debug?" condition))
    (*use-debugger*)))
 
+(defun use-debugger (&optional (flag t))
+  "Use the debugger when testing, or not."
+  (setq *use-debugger* flag))
+
 ;;; Global unit test database
 
 (defparameter *test-db* (make-hash-table :test #'eq)
