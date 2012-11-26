@@ -761,18 +761,18 @@ assertion.")
 
 ;;; Useful equality predicates for tests
 
-;;; (LOGICALLY-EQUAL x y) => true or false
-;;;   Return true if x and y both false or both true
 (defun logically-equal (x y)
+  "Return true if x and y are both false or both true."
   (eql (not x) (not y)))
 
-;;; (SET-EQUAL l1 l2 :test) => true or false
-;;;   Return true if every element of l1 is an element of l2
-;;;   and vice versa.
-(defun set-equal (l1 l2 &key (test #'equal))
-  (and (listp l1)
-       (listp l2)
-       (subsetp l1 l2 :test test)
-       (subsetp l2 l1 :test test)))
+(defun set-equal (list1 list2 &rest initargs &key key (test #'equal))
+  "Return true if every element of list1 is an element of list2 and
+vice versa."
+  (declare (ignore key test))
+  (and
+   (listp list1)
+   (listp list2)
+   (apply #'subsetp list1 list2 initargs)
+   (apply #'subsetp list2 list1 initargs)))
 
 (pushnew :lisp-unit common-lisp:*features*)
