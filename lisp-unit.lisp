@@ -123,6 +123,10 @@ assertion.")
     (y-or-n-p "~A -- debug?" condition))
    (*use-debugger*)))
 
+(defun use-debugger (&optional (flag t))
+  "Use the debugger when testing, or not."
+  (setq *use-debugger* flag))
+
 ;;; Failure control strings
 
 (defgeneric print-failure (type form expected actual extras)
