@@ -8,6 +8,19 @@ have been inspired by [JUnit for Java][JUnit].
 
 [Documentation is located on the project wiki.][wiki]
 
+### Features
+
+* Written in portable Common Lisp
+* Loadable as a single file
+* Loadable with [ASDF][] or [Quicklisp][]
+* Simple to define and run tests
+* Redfine functions and macros without reloading tests
+* Test return values, printed output, macro expansions, and conditions
+* Fined grained control over the testing output
+* Store all test results in a database object that can be examined
+* Group tests by package for modularity
+* Group tests using tags
+
 ### How to use lisp-unit
 
 The core definitions of *lisp-unit* may be used by loading the single
@@ -18,29 +31,12 @@ loaded using either [Quicklisp][] or [ASDF][].
 2. Load using [Quicklisp][] : `(ql:quickload :lisp-unit)`.
 3. Load using [ASDF][] : `(asdf:load-system :lisp-unit)`.
 
-## Version 0.9.2 Features
+## Version 0.9.3 Features
 
-### Simplified Interface
-
-The interface for managing tests has been simplified beginning in
-Version 0.9.0. The simplified interface is fully described on the
-[Reference page][reference]. The motivation for simplifying the
-interface and a comparison with the original interface is described on
-the [Simplified Interface page][interface].
-
-[reference]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Reference>
-[interface]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Simplified-Interface>
-
-### Test Documentation
-
-A documentation string can now be used in `define-test` like it is in
-`defun`.
-
-### Test tags
-
-Tests can be tagged by adding on or more `(:tag tag1 tag2 ...)` forms
-after the name or documentation string in `define-test`. The tags can
-then be used to run subsets of the unit tests with `run-tags`.
+A comprehensive test results database has been implemented for Version
+0.9.3. `run-tests` and `run-tags` return the test results database
+object. Two new functions have been added for examining the results,
+`print-failures` and `print-errors`.
 
 ## Version 1 Remaining Tasks
 
