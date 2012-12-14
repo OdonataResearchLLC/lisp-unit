@@ -263,7 +263,8 @@ assertion.")
   (loop with table = (package-tags package)
         for tag in tags
         as tests = (gethash tag table)
-        nconc (copy-list tests) into all-tests
+        if (null tests) do (warn "No tests tagged with ~S." tag)
+        else nconc (copy-list tests) into all-tests
         finally (return (delete-duplicates all-tests))))
 
 (defun list-tags (&optional (package *package*))
@@ -273,7 +274,7 @@ assertion.")
       (loop for tag being each hash-key in tags collect tag))))
 
 (defun tagged-tests (tags &optional (package *package*))
-  "Run the tests associated with the specified tags in package."
+  "Return a list of the tests associated with the tags."
   (if (eq :all tags)
       (%tests-from-all-tags package)
       (%tests-from-tags tags package)))
