@@ -427,6 +427,7 @@ comparison of the relative error is less than epsilon."
   "Return the norm of the vector according to the measure."
   (%norm data measure))
 
+;;; FIXME : Is the entrywise norm of an array useful or confusing?
 (defmethod norm ((data array) &optional (measure *measure*))
   "Return the entrywise norm of the array according to the measure."
   (%norm

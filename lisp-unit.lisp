@@ -87,6 +87,8 @@ functions or even macros does not require reloading any tests.
            :failed-tests
            :error-tests
            :missing-tests
+           :print-failures
+           :print-errors
            :summarize-results)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
@@ -95,11 +97,15 @@ functions or even macros does not require reloading any tests.
 
 ;;; Global counters
 
-(defparameter *pass* 0
-  "The number of passed assertions.")
+(defparameter *pass* ()
+  "The passed assertion results.")
 
-(defparameter *fail* 0
-  "The number of failed assertions.")
+(defparameter *fail* ()
+  "The failed assertion results.")
+
+(defun reset-counters ()
+  "Reset the counters to empty lists."
+  (setf *pass* () *fail* ()))
 
 ;;; Global options
 
@@ -123,52 +129,9 @@ assertion.")
     (y-or-n-p "~A -- debug?" condition))
    (*use-debugger*)))
 
-;;; Failure control strings
-
-(defgeneric print-failure (type form expected actual extras)
-  (:documentation
-   "Report the details of the failure assertion."))
-
-(defmethod print-failure :around (type form expected actual extras)
-  "Failure header and footer output."
-  (format t "~& | Failed Form: ~S" form)
-  (call-next-method)
-  (when extras
-    (format t "~{~& | ~S => ~S~}~%" (funcall extras)))
-  (format t "~& |~%")
-  type)
-
-(defmethod print-failure (type form expected actual extras)
-  (format t "~& | Expected ~{~S~^; ~} " expected)
-  (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" actual))
-
-(defmethod print-failure ((type (eql :error))
-                          form expected actual extras)
-  (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
-          expected)
-  (format t " ~{~S~^; ~}" actual))
-
-(defmethod print-failure ((type (eql :macro))
-                          form expected actual extras)
-  (format t "~& | Should have expanded to ~{~S~^; ~} " expected)
-  (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
-
-(defmethod print-failure ((type (eql :output))
-                          form expected actual extras)
-  (format t "~& | Should have printed ~{~S~^; ~} " expected)
-  (format t "~<~%~:;but saw ~{~S~^; ~}~>" actual))
-
-(defun print-error (condition)
-  "Print the error condition."
-  (let ((*print-escape* nil))
-    (format t "~& | Execution error:~% | ~W" condition)
-    (format t "~& |~%")))
-
-(defun print-summary (name pass fail &optional exerr)
-  "Print a summary of the test results."
-  (format t "~&~A: ~S assertions passed, ~S failed"
-          name pass fail)
-  (format t "~@[, ~S execution errors~].~2%" exerr))
+(defun use-debugger (&optional (flag t))
+  "Use the debugger when testing, or not."
+  (setq *use-debugger* flag))
 
 ;;; Global unit test database
 
@@ -194,6 +157,8 @@ assertion.")
    (create
     (setf (gethash package *tag-db*) (make-hash-table)))
    (t (warn "No tags defined for package: ~S" package))))
+
+;;; Unit test definition
 
 (defclass unit-test ()
   ((doc
@@ -223,18 +188,20 @@ assertion.")
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
-  (multiple-value-bind (doc tag code) (parse-body body)
-    `(let ((doc (or ,doc (string ',name))))
-       (setf
-        ;; Unit test
-        (gethash ',name (package-table *package* t))
-        (make-instance 'unit-test :doc doc :code ',code))
-       ;; Tags
-       (loop for tag in ',tag do
-             (pushnew
-              ',name (gethash tag (package-tags *package* t))))
-       ;; Return the name of the test
-       ',name)))
+  (let ((qname (gensym "NAME-")))
+    (multiple-value-bind (doc tag code) (parse-body body)
+      `(let* ((,qname ',name)
+              (doc (or ,doc (string ,qname))))
+         (setf
+          ;; Unit test
+          (gethash ,qname (package-table *package* t))
+          (make-instance 'unit-test :doc doc :code ',code))
+         ;; Tags
+         (loop for tag in ',tag do
+               (pushnew
+                ,qname (gethash tag (package-tags *package* t))))
+         ;; Return the name of the test
+         ,qname))))
 
 ;;; Manage tests
 
@@ -298,7 +265,8 @@ assertion.")
   (loop with table = (package-tags package)
         for tag in tags
         as tests = (gethash tag table)
-        nconc (copy-list tests) into all-tests
+        if (null tests) do (warn "No tests tagged with ~S." tag)
+        else nconc (copy-list tests) into all-tests
         finally (return (delete-duplicates all-tests))))
 
 (defun list-tags (&optional (package *package*))
@@ -308,7 +276,7 @@ assertion.")
       (loop for tag being each hash-key in tags collect tag))))
 
 (defun tagged-tests (tags &optional (package *package*))
-  "Run the tests associated with the specified tags in package."
+  "Return a list of the tests associated with the tags."
   (if (eq :all tags)
       (%tests-from-all-tags package)
       (%tests-from-tags tags package)))
@@ -403,61 +371,191 @@ assertion.")
   `(lambda ()
      (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
+(defclass assert-result ()
+  ((form
+    :initarg :form
+    :reader form)
+   (actual
+    :type list
+    :initarg :actual
+    :reader actual)
+   (expected
+    :type list
+    :initarg :expected
+    :reader expected)
+   (extras
+    :type list
+    :initarg :extras
+    :reader extras)
+   (test
+    :type function
+    :initarg :test
+    :reader test)
+   (passed
+    :type boolean
+    :reader passed))
+  (:documentation
+   "Result of the assertion."))
+
+(defclass equal-result (assert-result)
+  ()
+  (:documentation
+   "Result of an equal assertion type."))
+
+(defmethod initialize-instance :after ((self equal-result)
+                                       &rest initargs)
+  "Return the result of the equality assertion."
+  (with-slots (actual expected test passed) self
+    (setf passed
+          (and
+           (<= (length expected) (length actual))
+           (every test expected actual)))))
+
+(defclass error-result (assert-result)
+  ()
+  (:documentation
+   "Result of an error assertion type."))
+
+(defmethod initialize-instance :after ((self error-result)
+                                       &rest initargs)
+  "Evaluate the result."
+  (with-slots (actual expected passed) self
+    (setf
+     passed
+     (or
+      (eql (car actual) (car expected))
+      (typep (car actual) (car expected))))))
+
+(defclass macro-result (assert-result)
+  ()
+  (:documentation
+   "Result of a macro assertion type."))
+
+(defmethod initialize-instance :after ((self macro-result)
+                                       &rest initargs)
+  "Return the result of the macro expansion."
+  (with-slots (actual expected passed) self
+    (setf passed (equal (car actual) (car expected)))))
+
+(defclass boolean-result (assert-result)
+  ()
+  (:documentation
+   "Result of a result assertion type."))
+
+(defmethod initialize-instance :after ((self boolean-result)
+                                       &rest initargs)
+  "Return the result of the assertion."
+  (with-slots (actual expected passed) self
+    (setf passed (logically-equal (car actual) (car expected)))))
+
+(defclass output-result (assert-result)
+  ()
+  (:documentation
+   "Result of an output assertion type."))
+
+(defmethod initialize-instance :after ((self output-result)
+                                       &rest initargs)
+  "Return the result of the printed output."
+  (with-slots (actual expected passed) self
+    (setf
+     passed
+     (string=
+      (string-trim '(#\newline #\return #\space) (car actual))
+      (car expected)))))
+
+(defun assert-class (type)
+  "Return the class name for the assertion type."
+  (ecase type
+    (:equal 'equal-result)
+    (:error 'error-result)
+    (:macro 'macro-result)
+    (:result 'boolean-result)
+    (:output 'output-result)))
+
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
   "Perform the assertion and record the results."
-  (let* ((expected (multiple-value-list (funcall expected-thunk)))
-         (actual (multiple-value-list (funcall code-thunk)))
-         (passed (test-passed-p type expected actual test)))
-    ;; Count the assertion
-    (if passed
-        (incf *pass*)
-        (incf *fail*))
-    ;; Report the assertion
-    (when (and (not passed) *print-failures*)
-      (print-failure type form expected actual extras))
+  (let ((result
+         (make-instance
+          (assert-class type)
+          :form form
+          :actual (multiple-value-list (funcall code-thunk))
+          :expected (multiple-value-list (funcall expected-thunk))
+          :extras (when extras (funcall extras))
+          :test test)))
+    (if (passed result)
+        (push result *pass*)
+        (push result *fail*))
     ;; Return the result
-    passed))
+    (passed result)))
 
-;;; Test passed predicate.
+;;; Unit test results
 
-(defgeneric test-passed-p (type expected actual test)
-  (:documentation
-   "Return the result of the test."))
-
-(defmethod test-passed-p ((type (eql :error)) expected actual test)
-  "Return the result of the error assertion."
-  (or
-   (eql (car actual) (car expected))
-   (typep (car actual) (car expected))))
-
-(defmethod test-passed-p ((type (eql :equal)) expected actual test)
-  "Return the result of the equality assertion."
-  (and
-   (<= (length expected) (length actual))
-   (every test expected actual)))
-
-(defmethod test-passed-p ((type (eql :macro)) expected actual test)
-  "Return the result of the macro expansion."
-  (equal (car actual) (car expected)))
-
-(defmethod test-passed-p ((type (eql :output)) expected actual test)
-  "Return the result of the printed output."
-  (string=
-   (string-trim '(#\newline #\return #\space) (car actual))
-   (car expected)))
-
-(defmethod test-passed-p ((type (eql :result)) expected actual test)
-  "Return the result of the assertion."
-  (logically-equal (car actual) (car expected)))
-
-;;; Results
-
-(defclass test-results ()
-  ((test-names
+(defclass test-result ()
+  ((name
+    :type symbol
+    :initarg :name
+    :reader name)
+   (pass
     :type list
-    :initarg :test-names
-    :accessor test-names)
+    :initarg :pass
+    :reader pass)
+   (fail
+    :type list
+    :initarg :fail
+    :reader fail)
+   (exerr
+    :initarg :exerr
+    :reader exerr))
+  (:default-initargs :exerr nil)
+  (:documentation
+   "Store the results of the unit test."))
+
+(defun print-summary (test-result)
+  "Print a summary of the test result."
+  (format t "~&~A: ~S assertions passed, ~S failed"
+          (name test-result)
+          (length (pass test-result))
+          (length (fail test-result)))
+  (if (exerr test-result)
+      (format t ", and an execution error.")
+      (write-char #\.))
+  (terpri)
+  (terpri))
+
+(defun run-code (code)
+  "Run the code to test the assertions."
+  (funcall (coerce `(lambda () ,@code) 'function)))
+
+(defun run-test-thunk (name code)
+  (let ((*pass* ())
+        (*fail* ()))
+    (handler-bind
+        ((error
+          (lambda (condition)
+            (if (use-debugger-p condition)
+                condition
+                (return-from run-test-thunk
+                  (make-instance
+                   'test-result
+                   :name name
+                   :pass *pass*
+                   :fail *fail*
+                   :exerr condition))))))
+      (run-code code))
+    ;; Return the result count
+    (make-instance 'test-result
+                   :name name
+                   :pass *pass*
+                   :fail *fail*)))
+
+;;; Test results database
+
+(defclass test-results-db ()
+  ((database
+    :type hash-table
+    :initform (make-hash-table :test #'eq)
+    :reader database)
    (pass
     :type fixnum
     :initform 0
@@ -482,37 +580,45 @@ assertion.")
     :type list
     :initform ()
     :accessor missing-tests))
-  (:default-initargs :test-names ())
   (:documentation
    "Store the results of the tests for further evaluation."))
 
-(defmethod print-object ((object test-results) stream)
+(defmethod print-object ((object test-results-db) stream)
   "Print the summary counts with the object."
-  (format stream "#<~A Total(~D) Passed(~D) Failed(~D) Errors(~D)>~%"
-          (class-name (class-of object))
-          (+ (pass object) (fail object))
-          (pass object) (fail object) (exerr object)))
+  (let ((pass (pass object))
+        (fail (fail object))
+        (exerr (exerr object)))
+    (format
+     stream "#<~A Total(~D) Passed(~D) Failed(~D) Errors(~D)>~%"
+     (class-name (class-of object))
+     (+ pass fail) pass fail exerr)))
+
+(defun test-names (test-results-db)
+  "Return a list of the test names in the database."
+  (loop for name being each hash-key in (database test-results-db)
+        collect name))
 
 (defun record-result (test-name code results)
   "Run the test code and record the result."
-  (multiple-value-bind (pass fail exerr)
-      (run-test-thunk code)
-    (push test-name (test-names results))
+  (let ((result (run-test-thunk test-name code)))
+    ;; Store the result
+    (setf (gethash test-name (database results)) result)
     ;; Count passed tests
-    (when (plusp pass)
-      (incf (pass results) pass))
-    ;; Count failed tests and record name
-    (when (plusp fail)
-      (incf (fail results) fail)
+    (when (pass result)
+      (incf (pass results) (length (pass result))))
+    ;; Count failed tests and record the name
+    (when (fail result)
+      (incf (fail results) (length (fail result)))
       (push test-name (failed-tests results)))
-    ;; Count errors and record name
-    (when exerr
+    ;; Count errors and record the name
+    (when (exerr result)
       (incf (exerr results))
       (push test-name (error-tests results)))
-    ;; Print a summary of the results
+    ;; Running output
+    (when *print-failures* (print-failures result))
+    (when *print-errors* (print-errors result))
     (when (or *print-summary* *print-failures* *print-errors*)
-      (print-summary
-       test-name pass fail (when exerr 1)))))
+      (print-summary result))))
 
 (defun summarize-results (results)
   "Print a summary of all results."
@@ -528,29 +634,10 @@ assertion.")
 
 ;;; Run the tests
 
-(defun run-code (code)
-  "Run the code to test the assertions."
-  (funcall (coerce `(lambda () ,@code) 'function)))
-
-(defun run-test-thunk (code)
-  (let ((*pass* 0)
-        (*fail* 0))
-    (handler-bind
-        ((error (lambda (condition)
-                  (when *print-errors*
-                    (print-error condition))
-                  (if (use-debugger-p condition)
-                      condition
-                      (return-from run-test-thunk
-                        (values *pass* *fail* condition))))))
-      (run-code code))
-    ;; Return the result count
-    (values *pass* *fail* nil)))
-
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
   (loop
-   with results = (make-instance 'test-results)
+   with results = (make-instance 'test-results-db)
    for test-name being each hash-key in (package-table package)
    using (hash-value unit-test)
    if unit-test do
@@ -566,7 +653,7 @@ assertion.")
   "Run the list of test thunks in the package."
   (loop
    with table = (package-table package)
-   and results = (make-instance 'test-results)
+   and results = (make-instance 'test-results-db)
    for test-name in test-names
    as unit-test = (gethash test-name table)
    if unit-test do
@@ -579,28 +666,102 @@ assertion.")
 
 (defun run-tests (test-names &optional (package *package*))
   "Run the specified tests in package."
+  (reset-counters)
   (if (eq :all test-names)
       (%run-all-thunks package)
       (%run-thunks test-names package)))
 
 (defun run-tags (tags &optional (package *package*))
   "Run the tests associated with the specified tags in package."
+  (reset-counters)
   (%run-thunks (tagged-tests tags package) package))
+
+;;; Print failures
+
+(defgeneric print-failures (result)
+  (:documentation
+   "Report the results of the failed assertion."))
+
+(defmethod print-failures :around ((result assert-result))
+  "Failure header and footer output."
+  (format t "~& | Failed Form: ~S" (form result))
+  (call-next-method)
+  (when (extras result)
+    (format t "~{~& | ~S => ~S~}~%" (extras result)))
+  (format t "~& |~%")
+  (class-name (class-of result)))
+
+(defmethod print-failures ((result assert-result))
+  (format t "~& | Expected ~{~S~^; ~} " (expected result))
+  (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" (actual result)))
+
+(defmethod print-failures ((result error-result))
+  (format t "~& | ~@[Should have signalled ~{~S~^; ~} but saw~]"
+          (expected result))
+  (format t " ~{~S~^; ~}" (actual result)))
+
+(defmethod print-failures ((result macro-result))
+  (format t "~& | Should have expanded to ~{~S~^; ~} "
+          (expected result))
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>" (actual result)))
+
+(defmethod print-failures ((result output-result))
+  (format t "~& | Should have printed ~{~S~^; ~} "
+          (expected result))
+  (format t "~<~%~:;but saw ~{~S~^; ~}~>"
+          (actual result)))
+
+(defmethod print-failures ((result test-result))
+  "Print the failed assertions in the unit test."
+  (loop for fail in (fail result) do
+        (print-failures fail)))
+
+(defmethod print-failures ((results test-results-db))
+  "Print all of the failure tests."
+  (loop with db = (database results)
+        for test in (failed-tests results)
+        as result = (gethash test db)
+        do
+        (print-failures result)
+        (print-summary result)))
+
+;;; Print errors
+
+(defgeneric print-errors (result)
+  (:documentation
+   "Print the error condition."))
+
+(defmethod print-errors ((result test-result))
+  "Print the error condition."
+  (let ((exerr (exerr result))
+        (*print-escape* nil))
+    (when exerr
+      (format t "~& | Execution error:~% | ~W" exerr)
+      (format t "~& |~%"))))
+
+(defmethod print-errors ((results test-results-db))
+  "Print all of the error tests."
+  (loop with db = (database results)
+        for test in (error-tests results)
+        as result = (gethash test db)
+        do
+        (print-errors result)
+        (print-summary result)))
 
 ;;; Useful equality predicates for tests
 
-;;; (LOGICALLY-EQUAL x y) => true or false
-;;;   Return true if x and y both false or both true
 (defun logically-equal (x y)
+  "Return true if x and y are both false or both true."
   (eql (not x) (not y)))
 
-;;; (SET-EQUAL l1 l2 :test) => true or false
-;;;   Return true if every element of l1 is an element of l2
-;;;   and vice versa.
-(defun set-equal (l1 l2 &key (test #'equal))
-  (and (listp l1)
-       (listp l2)
-       (subsetp l1 l2 :test test)
-       (subsetp l2 l1 :test test)))
+(defun set-equal (list1 list2 &rest initargs &key key (test #'equal))
+  "Return true if every element of list1 is an element of list2 and
+vice versa."
+  (declare (ignore key test))
+  (and
+   (listp list1)
+   (listp list2)
+   (apply #'subsetp list1 list2 initargs)
+   (apply #'subsetp list2 list1 initargs)))
 
 (pushnew :lisp-unit common-lisp:*features*)
