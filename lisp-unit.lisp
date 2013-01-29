@@ -90,6 +90,9 @@ functions or even macros does not require reloading any tests.
            :print-failures
            :print-errors
            :summarize-results)
+  ;; Functions for extensibility via signals
+  (:export :test-run-complete
+           :results)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
 
@@ -633,6 +636,9 @@ assertion.")
             (length (missing-tests results)))))
 
 ;;; Run the tests
+(define-condition test-run-complete ()
+  ((results :initarg :results :reader results))
+  (:documentation "signaled when a test run is finished"))
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
@@ -647,6 +653,7 @@ assertion.")
    ;; Summarize and return the test results
    finally
    (summarize-results results)
+    (signal 'test-run-complete :results results)
    (return results)))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -662,6 +669,7 @@ assertion.")
    (push test-name (missing-tests results))
    finally
    (summarize-results results)
+    (signal 'test-run-complete :results results)
    (return results)))
 
 (defun run-tests (test-names &optional (package *package*))
