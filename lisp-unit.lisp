@@ -397,19 +397,6 @@ assertion.")
   (:documentation
    "Result of the assertion."))
 
-(defmethod initialize-instance :after ((self assert-result)
-                                       &rest initargs)
-  "Evaluate the actual and expected forms"
-  (with-slots (actual expected) self
-    (setf
-     actual (multiple-value-list (funcall actual))
-     expected (multiple-value-list (funcall expected))))
-  ;; Generate extras
-  (when (slot-boundp self 'extras)
-    (setf
-     (slot-value self 'extras)
-     (funcall (slot-value self 'extras)))))
-
 (defclass equal-result (assert-result)
   ()
   (:documentation
@@ -419,11 +406,10 @@ assertion.")
                                        &rest initargs)
   "Return the result of the equality assertion."
   (with-slots (actual expected test passed) self
-    (setf
-     passed
-     (and
-      (<= (length expected) (length actual))
-      (every test expected actual)))))
+    (setf passed
+          (and
+           (<= (length expected) (length actual))
+           (every test expected actual)))))
 
 (defclass error-result (assert-result)
   ()
@@ -490,12 +476,13 @@ assertion.")
        (type form code-thunk expected-thunk extras test)
   "Perform the assertion and record the results."
   (let ((result
-         (make-instance (assert-class type)
-                        :form form
-                        :actual code-thunk
-                        :expected expected-thunk
-                        :extras extras
-                        :test test)))
+         (make-instance
+          (assert-class type)
+          :form form
+          :actual (multiple-value-list (funcall code-thunk))
+          :expected (multiple-value-list (funcall expected-thunk))
+          :extras (when extras (funcall extras))
+          :test test)))
     (if (passed result)
         (push result *pass*)
         (push result *fail*))
@@ -518,7 +505,6 @@ assertion.")
     :initarg :fail
     :reader fail)
    (exerr
-    :type condition
     :initarg :exerr
     :reader exerr))
   (:default-initargs :exerr nil)
