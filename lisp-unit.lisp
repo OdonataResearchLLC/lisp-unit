@@ -188,18 +188,20 @@ assertion.")
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
-  (multiple-value-bind (doc tag code) (parse-body body)
-    `(let ((doc (or ,doc (string ',name))))
-       (setf
-        ;; Unit test
-        (gethash ',name (package-table *package* t))
-        (make-instance 'unit-test :doc doc :code ',code))
-       ;; Tags
-       (loop for tag in ',tag do
-             (pushnew
-              ',name (gethash tag (package-tags *package* t))))
-       ;; Return the name of the test
-       ',name)))
+  (let ((qname (gensym "NAME-")))
+    (multiple-value-bind (doc tag code) (parse-body body)
+      `(let* ((,qname ',name)
+              (doc (or ,doc (string ,qname))))
+         (setf
+          ;; Unit test
+          (gethash ,qname (package-table *package* t))
+          (make-instance 'unit-test :doc doc :code ',code))
+         ;; Tags
+         (loop for tag in ',tag do
+               (pushnew
+                ,qname (gethash tag (package-tags *package* t))))
+         ;; Return the name of the test
+         ,qname))))
 
 ;;; Manage tests
 
