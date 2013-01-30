@@ -90,6 +90,8 @@ functions or even macros does not require reloading any tests.
            :print-failures
            :print-errors
            :summarize-results)
+  ;; behavioral parameters
+  (:export :*keep-passing-asserts*)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
 
@@ -132,6 +134,11 @@ assertion.")
 (defun use-debugger (&optional (flag t))
   "Use the debugger when testing, or not."
   (setq *use-debugger* flag))
+
+(defparameter *keep-passing-asserts* T
+  "when non-nil, passing test assertions will be collected as objects and
+  accessible in test-result objects.  When nil, only the type of the passing
+  assertion will be collected, saving memory."  )
 
 ;;; Global unit test database
 
@@ -484,7 +491,8 @@ assertion.")
           :extras (when extras (funcall extras))
           :test test)))
     (if (passed result)
-        (push result *pass*)
+        (push (if *keep-passing-asserts* result type)
+              *pass*)
         (push result *fail*))
     ;; Return the result
     (passed result)))
