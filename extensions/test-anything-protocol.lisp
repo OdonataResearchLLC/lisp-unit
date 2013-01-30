@@ -39,7 +39,7 @@
 same before and after invocation."
   (pprint-logical-block (stream nil)
     (format stream
-            "~:[ok~;not ok~] ~d - ~s"
+            "~:[ok~;not ok~] ~d ~s"
             (or (fail test-result)
                 (exerr test-result))
             i name)
