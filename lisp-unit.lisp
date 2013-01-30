@@ -90,6 +90,11 @@ functions or even macros does not require reloading any tests.
            :print-failures
            :print-errors
            :summarize-results)
+  ;; Functions for extensibility via signals
+  (:export :test-run-complete
+           :results)
+  ;; behavioral parameters
+  (:export :*keep-passing-asserts*)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
 
@@ -132,6 +137,11 @@ assertion.")
 (defun use-debugger (&optional (flag t))
   "Use the debugger when testing, or not."
   (setq *use-debugger* flag))
+
+(defparameter *keep-passing-asserts* T
+  "when non-nil, passing test assertions will be collected as objects and
+  accessible in test-result objects.  When nil, only the type of the passing
+  assertion will be collected, saving memory."  )
 
 ;;; Global unit test database
 
@@ -484,7 +494,8 @@ assertion.")
           :extras (when extras (funcall extras))
           :test test)))
     (if (passed result)
-        (push result *pass*)
+        (push (if *keep-passing-asserts* result type)
+              *pass*)
         (push result *fail*))
     ;; Return the result
     (passed result)))
@@ -633,6 +644,9 @@ assertion.")
             (length (missing-tests results)))))
 
 ;;; Run the tests
+(define-condition test-run-complete ()
+  ((results :initarg :results :reader results))
+  (:documentation "signaled when a test run is finished"))
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
@@ -647,6 +661,7 @@ assertion.")
    ;; Summarize and return the test results
    finally
    (summarize-results results)
+    (signal 'test-run-complete :results results)
    (return results)))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -662,6 +677,7 @@ assertion.")
    (push test-name (missing-tests results))
    finally
    (summarize-results results)
+    (signal 'test-run-complete :results results)
    (return results)))
 
 (defun run-tests (test-names &optional (package *package*))
