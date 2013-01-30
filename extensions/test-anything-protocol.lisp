@@ -61,7 +61,8 @@ same before and after invocation."
   "write the test results to `stream` in TAP format. Returns the test
 results."
   (check-type test-results test-results-db)
-  (let ((i 0))
+  (let ((i 0)
+        (*print-pretty* T))
     (format stream "TAP version 13~%1..~d~%"
             (hash-table-count (database test-results)))
     (maphash
