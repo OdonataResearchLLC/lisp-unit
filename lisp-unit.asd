@@ -34,4 +34,5 @@
    (:module extensions
     :depends-on ("lisp-unit")
     :components ((:file "rational")
-                 (:file "floating-point")))))
+                 (:file "floating-point")
+                 (:file "test-anything-protocol")))))
