@@ -99,15 +99,15 @@ functions or even macros does not require reloading any tests.
 
 ;;; Global counters
 
-(defparameter *pass* ()
-  "The passed assertion results.")
+(defparameter *pass* 0
+  "The number of passed assertions during a test run.")
 
 (defparameter *fail* ()
   "The failed assertion results.")
 
 (defun reset-counters ()
   "Reset the counters to empty lists."
-  (setf *pass* () *fail* ()))
+  (setf *pass* 0 *fail* ()))
 
 ;;; Global options
 
@@ -491,8 +491,7 @@ assertion.")
           :extras (when extras (funcall extras))
           :test test)))
     (if (passed result)
-        (push (if *keep-passing-asserts* result type)
-              *pass*)
+        (incf *pass*)
         (push result *fail*))
     ;; Return the result
     (passed result)))
@@ -505,7 +504,7 @@ assertion.")
     :initarg :name
     :reader name)
    (pass
-    :type list
+    :type fixnum
     :initarg :pass
     :reader pass)
    (fail
@@ -523,7 +522,7 @@ assertion.")
   "Print a summary of the test result."
   (format t "~&~A: ~S assertions passed, ~S failed"
           (name test-result)
-          (length (pass test-result))
+          (pass test-result)
           (length (fail test-result)))
   (if (exerr test-result)
       (format t ", and an execution error.")
@@ -536,7 +535,7 @@ assertion.")
   (funcall (coerce `(lambda () ,@code) 'function)))
 
 (defun run-test-thunk (name code)
-  (let ((*pass* ())
+  (let ((*pass* 0)
         (*fail* ()))
     (handler-bind
         ((error
@@ -613,7 +612,7 @@ assertion.")
     (setf (gethash test-name (database results)) result)
     ;; Count passed tests
     (when (pass result)
-      (incf (pass results) (length (pass result))))
+      (incf (pass results) (pass result)))
     ;; Count failed tests and record the name
     (when (fail result)
       (incf (fail results) (length (fail result)))
