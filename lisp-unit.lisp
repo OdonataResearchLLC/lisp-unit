@@ -91,7 +91,8 @@ functions or even macros does not require reloading any tests.
            :print-errors
            :summarize-results)
   ;; Functions for extensibility via signals
-  (:export :test-run-complete
+  (:export :signal-results
+           :test-run-complete
            :results)
   ;; Utility predicates
   (:export :logically-equal :set-equal))
@@ -125,6 +126,9 @@ functions or even macros does not require reloading any tests.
   "If not NIL, enter the debugger when an error is encountered in an
 assertion.")
 
+(defparameter *signal-results* nil
+  "Signal the result if non NIL.")
+
 (defun use-debugger-p (condition)
   "Debug or ignore errors."
   (cond
@@ -135,6 +139,17 @@ assertion.")
 (defun use-debugger (&optional (flag t))
   "Use the debugger when testing, or not."
   (setq *use-debugger* flag))
+
+(defun signal-results (&optional (flag t))
+  "Signal the results for extensibility."
+  (setq *signal-results* flag))
+
+(define-condition test-run-complete ()
+  ((results
+    :initarg :results
+    :reader results))
+  (:documentation
+   "Signaled when a test run is finished."))
 
 ;;; Global unit test database
 
@@ -636,9 +651,6 @@ assertion.")
             (length (missing-tests results)))))
 
 ;;; Run the tests
-(define-condition test-run-complete ()
-  ((results :initarg :results :reader results))
-  (:documentation "signaled when a test run is finished"))
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
@@ -652,8 +664,9 @@ assertion.")
    (push test-name (missing-tests results))
    ;; Summarize and return the test results
    finally
+   (when *signal-results*
+     (signal 'test-run-complete :results results))
    (summarize-results results)
-    (signal 'test-run-complete :results results)
    (return results)))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -668,8 +681,9 @@ assertion.")
    else do
    (push test-name (missing-tests results))
    finally
+   (when *signal-results*
+     (signal 'test-run-complete :results results))
    (summarize-results results)
-    (signal 'test-run-complete :results results)
    (return results)))
 
 (defun run-tests (test-names &optional (package *package*))
