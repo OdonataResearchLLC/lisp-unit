@@ -101,7 +101,7 @@ functions or even macros does not require reloading any tests.
 
 ;;; Global counters
 
-(defparameter *pass* ()
+(defparameter *pass* 0
   "The passed assertion results.")
 
 (defparameter *fail* ()
@@ -109,7 +109,7 @@ functions or even macros does not require reloading any tests.
 
 (defun reset-counters ()
   "Reset the counters to empty lists."
-  (setf *pass* () *fail* ()))
+  (setf *pass* 0 *fail* ()))
 
 ;;; Global options
 
@@ -389,7 +389,7 @@ assertion.")
   `(lambda ()
      (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
-(defclass assert-result ()
+(defclass failure-result ()
   ((form
     :initarg :form
     :reader form)
@@ -408,81 +408,77 @@ assertion.")
    (test
     :type function
     :initarg :test
-    :reader test)
-   (passed
-    :type boolean
-    :reader passed))
+    :reader test))
   (:documentation
-   "Result of the assertion."))
+   "Failure details of the assertion."))
 
-(defclass equal-result (assert-result)
+(defclass equal-result (failure-result)
   ()
   (:documentation
-   "Result of an equal assertion type."))
+   "Result of a failed equal assertion."))
 
-(defmethod initialize-instance :after ((self equal-result)
-                                       &rest initargs)
-  "Return the result of the equality assertion."
-  (with-slots (actual expected test passed) self
-    (setf passed
-          (and
-           (<= (length expected) (length actual))
-           (every test expected actual)))))
+(defun equal-result (test expected actual)
+  "Return the result of an equal assertion."
+  (and
+   (<= (length expected) (length actual))
+   (every test expected actual)))
 
-(defclass error-result (assert-result)
+(defclass error-result (failure-result)
   ()
   (:documentation
-   "Result of an error assertion type."))
+   "Result of a failed error assertion."))
 
-(defmethod initialize-instance :after ((self error-result)
-                                       &rest initargs)
-  "Evaluate the result."
-  (with-slots (actual expected passed) self
-    (setf
-     passed
-     (or
-      (eql (car actual) (car expected))
-      (typep (car actual) (car expected))))))
+(defun error-result (test expected actual)
+  "Return the result of an error assertion."
+  (declare (ignore test))
+  (or
+   (eql (car actual) (car expected))
+   (typep (car actual) (car expected))))
 
-(defclass macro-result (assert-result)
+(defclass macro-result (failure-result)
   ()
   (:documentation
-   "Result of a macro assertion type."))
+   "Result of a failed macro expansion assertion."))
 
-(defmethod initialize-instance :after ((self macro-result)
-                                       &rest initargs)
-  "Return the result of the macro expansion."
-  (with-slots (actual expected passed) self
-    (setf passed (equal (car actual) (car expected)))))
+;;; FIXME: Review the internal tests for macros.
+(defun macro-result (test expected actual)
+  "Return the result of a macro assertion."
+  (declare (ignore test))
+  (equal (car actual) (car expected)))
 
-(defclass boolean-result (assert-result)
+(defclass boolean-result (failure-result)
   ()
   (:documentation
-   "Result of a result assertion type."))
+   "Result of a failed boolean assertion."))
 
-(defmethod initialize-instance :after ((self boolean-result)
-                                       &rest initargs)
-  "Return the result of the assertion."
-  (with-slots (actual expected passed) self
-    (setf passed (logically-equal (car actual) (car expected)))))
+(defun boolean-result (test expected actual)
+  "Return the result of a result assertion."
+  (declare (ignore test))
+  (logically-equal (car actual) (car expected)))
 
-(defclass output-result (assert-result)
+(defclass output-result (failure-result)
   ()
   (:documentation
-   "Result of an output assertion type."))
+   "Result of a failed output assertion."))
 
-(defmethod initialize-instance :after ((self output-result)
-                                       &rest initargs)
-  "Return the result of the printed output."
-  (with-slots (actual expected passed) self
-    (setf
-     passed
-     (string=
-      (string-trim '(#\newline #\return #\space) (car actual))
-      (car expected)))))
+(defun output-result (test expected actual)
+  "Return the result of an output assertion."
+  (declare (ignore test))
+  (string=
+   (string-trim '(#\newline #\return #\space) (car actual))
+   (car expected)))
+
+(defun assert-function (type)
+  "Return the function for the assertion type."
+  (ecase type
+    (:equal #'equal-result)
+    (:error #'error-result)
+    (:macro #'macro-result)
+    (:result #'boolean-result)
+    (:output #'output-result)))
 
 (defun assert-class (type)
-  "Return the class name for the assertion type."
+  "Return the class for the assertion type."
   (ecase type
     (:equal 'equal-result)
     (:error 'error-result)
@@ -493,19 +489,22 @@ assertion.")
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
   "Perform the assertion and record the results."
-  (let ((result
-         (make-instance
-          (assert-class type)
-          :form form
-          :actual (multiple-value-list (funcall code-thunk))
-          :expected (multiple-value-list (funcall expected-thunk))
-          :extras (when extras (funcall extras))
-          :test test)))
-    (if (passed result)
-        (push result *pass*)
-        (push result *fail*))
+  (let* ((actual (multiple-value-list (funcall code-thunk)))
+         (expected (multiple-value-list (funcall expected-thunk)))
+         (result
+          (funcall (assert-function type) test expected actual)))
+    (if result
+        (incf *pass*)
+        (push (make-instance
+               (assert-class type)
+               :form form
+               :actual actual
+               :expected expected
+               :extras (when extras (funcall extras))
+               :test test)
+              *fail*))
     ;; Return the result
-    (passed result)))
+    result))
 
 ;;; Unit test results
 
@@ -515,7 +514,7 @@ assertion.")
     :initarg :name
     :reader name)
    (pass
-    :type list
+    :type fixnum
     :initarg :pass
     :reader pass)
    (fail
@@ -533,7 +532,7 @@ assertion.")
   "Print a summary of the test result."
   (format t "~&~A: ~S assertions passed, ~S failed"
           (name test-result)
-          (length (pass test-result))
+          (pass test-result)
           (length (fail test-result)))
   (if (exerr test-result)
       (format t ", and an execution error.")
@@ -546,7 +545,7 @@ assertion.")
   (funcall (coerce `(lambda () ,@code) 'function)))
 
 (defun run-test-thunk (name code)
-  (let ((*pass* ())
+  (let ((*pass* 0)
         (*fail* ()))
     (handler-bind
         ((error
@@ -562,10 +561,11 @@ assertion.")
                    :exerr condition))))))
       (run-code code))
     ;; Return the result count
-    (make-instance 'test-result
-                   :name name
-                   :pass *pass*
-                   :fail *fail*)))
+    (make-instance
+     'test-result
+     :name name
+     :pass *pass*
+     :fail *fail*)))
 
 ;;; Test results database
 
@@ -622,8 +622,8 @@ assertion.")
     ;; Store the result
     (setf (gethash test-name (database results)) result)
     ;; Count passed tests
-    (when (pass result)
-      (incf (pass results) (length (pass result))))
+    (when (plusp (pass result))
+      (incf (pass results) (pass result)))
     ;; Count failed tests and record the name
     (when (fail result)
       (incf (fail results) (length (fail result)))
@@ -704,7 +704,7 @@ assertion.")
   (:documentation
    "Report the results of the failed assertion."))
 
-(defmethod print-failures :around ((result assert-result))
+(defmethod print-failures :around ((result failure-result))
   "Failure header and footer output."
   (format t "~& | Failed Form: ~S" (form result))
   (call-next-method)
@@ -713,7 +713,7 @@ assertion.")
   (format t "~& |~%")
   (class-name (class-of result)))
 
-(defmethod print-failures ((result assert-result))
+(defmethod print-failures ((result failure-result))
   (format t "~& | Expected ~{~S~^; ~} " (expected result))
   (format t "~<~% | ~:;but saw ~{~S~^; ~}~>" (actual result)))
 

@@ -35,15 +35,14 @@
 (export '(write-tap write-tap-to-file))
 
 (defun %write-tap-test-result (name test-result i stream)
-  "output a single test, taking care to ensure the indentation level is the
-same before and after invocation."
+  "Output a single test, taking care to ensure the indentation level
+is the same before and after invocation."
   (pprint-logical-block (stream nil)
     (format stream
             "~:[ok~;not ok~] ~d ~s"
             (or (fail test-result)
                 (exerr test-result))
             i name)
-  
     (when (or (fail test-result)
               (exerr test-result))
       ;; indent only takes affect after a newline, so force one
@@ -58,7 +57,7 @@ same before and after invocation."
     (format stream "~0I~@:_")))
 
 (defun write-tap (test-results &optional (stream *standard-output*))
-  "write the test results to `stream` in TAP format. Returns the test
+  "Write the test results to `stream` in TAP format. Returns the test
 results."
   (check-type test-results test-results-db)
   (let ((i 0)
@@ -72,8 +71,8 @@ results."
   test-results)
 
 (defun write-tap-to-file (test-results path)
-  "write the test results to `path` in TAP format, overwriting `path`. Returns
-pathname to the output file"
+  "write the test results to `path` in TAP format, overwriting `path`.
+Returns pathname to the output file"
   (check-type path (or string pathname))
   (ensure-directories-exist path)
   (with-open-file (s path :direction :output :if-exists :supersede)
