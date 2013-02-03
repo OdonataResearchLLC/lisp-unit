@@ -251,9 +251,9 @@ assertion.")
         (unless (null table)
           ;; Remove tests
           (loop for name in names
-                always (remhash name table)
-                collect name into removed
-                finally (return removed))
+                unless (remhash name table) do
+                (warn "No test ~A in package ~A to remove."
+                      name (package-name package)))
           ;; Remove tests from tags
           (loop with tags = (package-tags package)
                 for tag being each hash-key in tags
