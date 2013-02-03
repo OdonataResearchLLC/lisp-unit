@@ -301,9 +301,9 @@ assertion.")
       (let ((table (package-tags package)))
         (unless (null table)
           (loop for tag in tags
-                always (remhash tag table)
-                collect tag into removed
-                finally (return removed))))))
+                unless (remhash tag table) do
+                (warn "No tag ~A in package ~A to remove."
+                      tag (package-name package)))))))
 
 ;;; Assert macros
 
