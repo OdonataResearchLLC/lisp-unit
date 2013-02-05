@@ -34,15 +34,21 @@
 
 (export '(write-tap write-tap-to-file))
 
+(defun run-time-s (test-result)
+  "calculate the run-time of the test in seconds"
+  (/ (run-time test-result)
+     internal-time-units-per-second))
+
 (defun %write-tap-test-result (name test-result i stream)
   "Output a single test, taking care to ensure the indentation level
 is the same before and after invocation."
   (pprint-logical-block (stream nil)
     (format stream
-            "~:[ok~;not ok~] ~d ~s"
+            "~:[ok~;not ok~] ~d ~s (~,2f s)"
             (or (fail test-result)
                 (exerr test-result))
-            i name)
+            i name
+            (run-time-s test-result))
     (when (or (fail test-result)
               (exerr test-result))
       ;; indent only takes affect after a newline, so force one
