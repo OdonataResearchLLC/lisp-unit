@@ -516,7 +516,10 @@ assertion.")
     :reader fail)
    (exerr
     :initarg :exerr
-    :reader exerr))
+    :reader exerr)
+   (run-time :initarg :run-time
+             :reader run-time
+             :documentation "run time measured in internal time units"))
   (:default-initargs :exerr nil)
   (:documentation
    "Store the results of the unit test."))
@@ -540,7 +543,8 @@ assertion.")
 
 (defun run-test-thunk (name code)
   (let ((*pass* 0)
-        (*fail* ()))
+        (*fail* ())
+        (start (get-internal-run-time)))
     (handler-bind
         ((error
           (lambda (condition)
@@ -552,6 +556,7 @@ assertion.")
                    :name name
                    :pass *pass*
                    :fail *fail*
+                   :run-time (- (get-internal-run-time) start)
                    :exerr condition))))))
       (run-code code))
     ;; Return the result count
@@ -559,7 +564,8 @@ assertion.")
      'test-result
      :name name
      :pass *pass*
-     :fail *fail*)))
+     :fail *fail*
+     :run-time (- (get-internal-run-time) start))))
 
 ;;; Test results database
 
