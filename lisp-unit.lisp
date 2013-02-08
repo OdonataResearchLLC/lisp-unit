@@ -332,7 +332,7 @@ assertion.")
   "Assert whether form expands to expansion."
   `(expand-assert :macro ,form 
                   (expand-macro-form ,form nil)
-                  ,expansion ,extras))
+                  ',expansion ,extras))
 
 (defmacro assert-false (form &rest extras)
   "Assert whether the form is false."
@@ -375,7 +375,8 @@ assertion.")
 
 (defmacro expand-macro-form (form env)
   "Expand the macro form once."
-  `(macroexpand-1 ',form ,env))
+  `(let ((*gensym-counter* 1))
+     (macroexpand-1 ',form ,env)))
 
 (defmacro expand-extras (extras)
   "Expand extra forms."
@@ -433,11 +434,28 @@ assertion.")
   (:documentation
    "Result of a failed macro expansion assertion."))
 
-;;; FIXME: Review the internal tests for macros.
+(defun %expansion-equal (form1 form2)
+  "Descend into the forms checking for equality."
+  (let ((item1 (first form1))
+        (item2 (first form2)))
+    (cond
+     ((and (null item1) (null item2)))
+     ((and (listp item1) (listp item2))
+      (and
+       (%expansion-equal item1 item2)
+       (%expansion-equal (rest form1) (rest form2))))
+     ((and (symbolp item1) (symbolp item2))
+      (and
+       (string= (symbol-name item1) (symbol-name item2))
+       (%expansion-equal (rest form1) (rest form2))))
+     (t (and
+         (equal item1 item2)
+         (%expansion-equal (rest form1) (rest form2)))))))
+
 (defun macro-result (test expected actual)
   "Return the result of a macro assertion."
   (declare (ignore test))
-  (equal (car actual) (car expected)))
+  (%expansion-equal (first expected) (first actual)))
 
 (defclass boolean-result (failure-result)
   ()
@@ -517,9 +535,11 @@ assertion.")
    (exerr
     :initarg :exerr
     :reader exerr)
-   (run-time :initarg :run-time
-             :reader run-time
-             :documentation "run time measured in internal time units"))
+   (run-time
+    :initarg :run-time
+    :reader run-time
+    :documentation
+    "Test run time measured in internal time units"))
   (:default-initargs :exerr nil)
   (:documentation
    "Store the results of the unit test."))
