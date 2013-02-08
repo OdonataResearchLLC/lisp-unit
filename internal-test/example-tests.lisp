@@ -57,6 +57,21 @@
   (dotimes (i 5)
     (assert-equal i (my-sqrt (* i i)) i)))
 
+;;; Macro
+
+(defmacro my-macro (arg1 arg2)
+  (let ((g1 (gensym))
+        (g2 (gensym)))
+    `(let ((,g1 ,arg1)
+           (,g2 ,arg2))
+       "Start"
+       (+ ,g1 ,g2 3))))
+
+(define-test test-macro
+  (assert-expands
+   (let ((#:G1 A) (#:G2 B)) "Start" (+ #:G1 #:G2 3))
+   (my-macro a b)))
+
 ;;; Tags
 
 (defun add-integer (integer1 integer2)
