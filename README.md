@@ -20,6 +20,12 @@ have been inspired by [JUnit for Java][JUnit].
 * Store all test results in a database object that can be examined
 * Group tests by package for modularity
 * Group tests using tags
+* Signal test completion and return results with the condition.
+
+### Extensions
+
+* Floating point predicates
+* [Test Anything Protocol][TAP] output
 
 ### How to use lisp-unit
 
@@ -31,12 +37,12 @@ loaded using either [Quicklisp][] or [ASDF][].
 2. Load using [Quicklisp][] : `(ql:quickload :lisp-unit)`.
 3. Load using [ASDF][] : `(asdf:load-system :lisp-unit)`.
 
-## Version 0.9.3 Features
+## Version 0.9.4 Features
 
-A comprehensive test results database has been implemented for Version
-0.9.3. `run-tests` and `run-tags` return the test results database
-object. Two new functions have been added for examining the results,
-`print-failures` and `print-errors`.
+Output for the [Test Anything Protocol][TAP] has been implemented as
+an extension by [Ryan Davis][ryepup] of AccelerationNet. Ryan is also
+responsible for the signal test completion feature that is used for
+the [TAP][] output.
 
 ## Version 1 Remaining Tasks
 
@@ -47,7 +53,6 @@ object. Two new functions have been added for examining the results,
 * Fixtures
 * Test Suites
 * Benchmarking tools
-* Test Anything Protocol(TAP) support.
 
 [orig]: <http://www.cs.northwestern.edu/academics/courses/325/readings/lisp-unit.html>
   "Original Lisp Unit"
@@ -56,3 +61,14 @@ object. Two new functions have been added for examining the results,
 [JUnit]: <http://www.junit.org> "JUnit"
 [Quicklisp]: <http://www.quicklisp.org> "Quicklisp"
 [ASDF]: <http://common-lisp.net/project/asdf/> "ASDF"
+[TAP]: <http://testanything.org/> "Test Anything Protocol"
+
+## 0.9.4 Acknowledgments
+
+* [Ryan Davis][ryepup] for the TAP extension and signaling test completion.
+* [Russ Tyndall][bobbysmith007] for cleaning up the use-debugger option.
+* [Mark Cox][markcox80] for catching a lisp-unit bug in CCL.
+
+[ryepup]: <https://github.com/ryepup> "Ryan Davis"
+[bobbysmith007]: <https://github.com/bobbysmith007> "Russ Tyndall"
+[markcox80]: <https://github.com/markcox80> "Mark Cox"
