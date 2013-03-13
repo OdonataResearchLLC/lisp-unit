@@ -199,6 +199,8 @@ assertion.")
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
+  (unless (symbolp name)
+    (error "The first argument to DEFINE-TEST should be a symbol."))
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
       `(let* ((,qname ',name)
