@@ -685,20 +685,21 @@ assertion.")
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
-  (loop
-   with results = (make-instance 'test-results-db)
-   for test-name being each hash-key in (package-table package)
-   using (hash-value unit-test)
-   if unit-test do
-   (record-result test-name (code unit-test) results)
-   else do
-   (push test-name (missing-tests results))
-   ;; Summarize and return the test results
-   finally
-   (when *signal-results*
-     (signal 'test-run-complete :results results))
-   (summarize-results results)
-   (return results)))
+  (when (hash-table-p (package-table package))
+    (loop
+       with results = (make-instance 'test-results-db)
+       for test-name being each hash-key in (package-table package)
+       using (hash-value unit-test)
+       if unit-test do
+	 (record-result test-name (code unit-test) results)
+       else do
+	 (push test-name (missing-tests results))
+       ;; Summarize and return the test results
+       finally
+	 (when *signal-results*
+	   (signal 'test-run-complete :results results))
+	 (summarize-results results)
+	 (return results))))
 
 (defun %run-thunks (test-names &optional (package *package*))
   "Run the list of test thunks in the package."
