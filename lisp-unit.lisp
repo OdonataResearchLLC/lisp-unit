@@ -197,13 +197,32 @@ assertion.")
           (parse-body (rest body) doc tag)))
      (t (values doc tag body)))))
 
+(defun test-name-error-report (test-name-error stream)
+  "Write the test-name-error to the stream."
+  (format stream "Test name ~S is not of type ~A."
+          (type-error-datum test-name-error)
+          (type-error-expected-type test-name-error)))
+
+(define-condition test-name-error (type-error)
+  ()
+  (:default-initargs :expected-type 'symbol)
+  (:report test-name-error-report)
+  (:documentation
+   "The test name error is a type error."))
+
+(defun valid-test-name (name)
+  "Signal a type-error if the test name is not a symbol."
+  (if (symbolp name)
+      name
+      (error 'test-name-error :datum name)))
+
 (defmacro define-test (name &body body)
   "Store the test in the test database."
   (unless (symbolp name)
     (error "The first argument to DEFINE-TEST should be a symbol."))
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
-      `(let* ((,qname ',name)
+      `(let* ((,qname (valid-test-name ',name))
               (doc (or ,doc (string ,qname))))
          (setf
           ;; Unit test
@@ -385,6 +404,14 @@ assertion.")
   `(lambda ()
      (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
+(defgeneric assert-result (type test expected actual)
+  (:documentation
+   "Return the result of the assertion."))
+
+(defgeneric record-failure (type form actual expected extras test)
+  (:documentation
+   "Record the details of the failure."))
+
 (defclass failure-result ()
   ((form
     :initarg :form
@@ -408,28 +435,47 @@ assertion.")
   (:documentation
    "Failure details of the assertion."))
 
+(defmethod record-failure (class form actual expected extras test)
+  "Return an instance of the failure result."
+  (make-instance class
+                 :form form
+                 :actual actual
+                 :expected expected
+                 :extras extras
+                 :test test))
+
 (defclass equal-result (failure-result)
   ()
   (:documentation
    "Result of a failed equal assertion."))
 
-(defun equal-result (test expected actual)
+(defmethod assert-result ((type (eql :equal)) test expected actual)
   "Return the result of an equal assertion."
   (and
    (<= (length expected) (length actual))
    (every test expected actual)))
+
+(defmethod record-failure ((type (eql :equal))
+                           form actual expected extras test)
+  "Return an instance of an equal failure result."
+  (call-next-method 'equal-result form actual expected extras test))
 
 (defclass error-result (failure-result)
   ()
   (:documentation
    "Result of a failed error assertion."))
 
-(defun error-result (test expected actual)
+(defmethod assert-result ((type (eql :error)) test expected actual)
   "Return the result of an error assertion."
   (declare (ignore test))
   (or
    (eql (car actual) (car expected))
    (typep (car actual) (car expected))))
+
+(defmethod record-failure ((type (eql :error))
+                           form actual expected extras test)
+  "Return an instance of an error failure result."
+  (call-next-method 'error-result form actual expected extras test))
 
 (defclass macro-result (failure-result)
   ()
@@ -454,68 +500,61 @@ assertion.")
          (equal item1 item2)
          (%expansion-equal (rest form1) (rest form2)))))))
 
-(defun macro-result (test expected actual)
+(defmethod assert-result ((type (eql  :macro)) test expected actual)
   "Return the result of a macro assertion."
   (declare (ignore test))
   (%expansion-equal (first expected) (first actual)))
+
+(defmethod record-failure ((type (eql :macro))
+                           form actual expected extras test)
+  "Return an instance of a macro failure result."
+  (call-next-method 'macro-result form actual expected extras test))
 
 (defclass boolean-result (failure-result)
   ()
   (:documentation
    "Result of a failed boolean assertion."))
 
-(defun boolean-result (test expected actual)
+(defmethod assert-result ((type (eql :result)) test expected actual)
   "Return the result of a result assertion."
   (declare (ignore test))
   (logically-equal (car actual) (car expected)))
+
+(defmethod record-failure ((type (eql :result))
+                           form actual expected extras test)
+  "Return an instance of a boolean failure result."
+  (call-next-method 'boolean-result form actual expected extras test))
 
 (defclass output-result (failure-result)
   ()
   (:documentation
    "Result of a failed output assertion."))
 
-(defun output-result (test expected actual)
+(defmethod assert-result ((type (eql :output)) test expected actual)
   "Return the result of an output assertion."
   (declare (ignore test))
   (string=
    (string-trim '(#\newline #\return #\space) (car actual))
    (car expected)))
 
-(defun assert-function (type)
-  "Return the function for the assertion type."
-  (ecase type
-    (:equal #'equal-result)
-    (:error #'error-result)
-    (:macro #'macro-result)
-    (:result #'boolean-result)
-    (:output #'output-result)))
-
-(defun assert-class (type)
-  "Return the class for the assertion type."
-  (ecase type
-    (:equal 'equal-result)
-    (:error 'error-result)
-    (:macro 'macro-result)
-    (:result 'boolean-result)
-    (:output 'output-result)))
+(defmethod record-failure ((type (eql :output))
+                           form actual expected extras test)
+  "Return an instance of an output failure result."
+  (call-next-method 'output-result form actual expected extras test))
 
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
   "Perform the assertion and record the results."
   (let* ((actual (multiple-value-list (funcall code-thunk)))
          (expected (multiple-value-list (funcall expected-thunk)))
-         (result
-          (funcall (assert-function type) test expected actual)))
+         (result (assert-result type test expected actual)))
     (if result
         (incf *pass*)
-        (push (make-instance
-               (assert-class type)
-               :form form
-               :actual actual
-               :expected expected
-               :extras (when extras (funcall extras))
-               :test test)
-              *fail*))
+        (push
+         (record-failure
+          type form actual expected
+          (when extras (funcall extras)) test)
+         *fail*))
     ;; Return the result
     result))
 
