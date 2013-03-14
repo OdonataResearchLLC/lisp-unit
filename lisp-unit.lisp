@@ -197,11 +197,30 @@ assertion.")
           (parse-body (rest body) doc tag)))
      (t (values doc tag body)))))
 
+(defun test-name-error-report (test-name-error stream)
+  "Write the test-name-error to the stream."
+  (format stream "Test name ~S is not of type ~A."
+          (type-error-datum test-name-error)
+          (type-error-expected-type test-name-error)))
+
+(define-condition test-name-error (type-error)
+  ()
+  (:default-initargs :expected-type 'symbol)
+  (:report test-name-error-report)
+  (:documentation
+   "The test name error is a type error."))
+
+(defun valid-test-name (name)
+  "Signal a type-error if the test name is not a symbol."
+  (if (symbolp name)
+      name
+      (error 'test-name-error :datum name)))
+
 (defmacro define-test (name &body body)
   "Store the test in the test database."
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
-      `(let* ((,qname ',name)
+      `(let* ((,qname ,(valid-test-name name))
               (doc (or ,doc (string ,qname))))
          (setf
           ;; Unit test
