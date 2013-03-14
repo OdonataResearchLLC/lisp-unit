@@ -220,7 +220,7 @@ assertion.")
   "Store the test in the test database."
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
-      `(let* ((,qname ,(valid-test-name name))
+      `(let* ((,qname (valid-test-name ',name))
               (doc (or ,doc (string ,qname))))
          (setf
           ;; Unit test
