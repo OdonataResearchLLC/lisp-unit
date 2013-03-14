@@ -402,6 +402,10 @@ assertion.")
   `(lambda ()
      (list ,@(mapcan (lambda (form) (list `',form form)) extras))))
 
+(defgeneric assert-result (type test expected actual)
+  (:documentation
+   "Return the result of the assertion."))
+
 (defclass failure-result ()
   ((form
     :initarg :form
@@ -430,7 +434,7 @@ assertion.")
   (:documentation
    "Result of a failed equal assertion."))
 
-(defun equal-result (test expected actual)
+(defmethod assert-result ((type (eql :equal)) test expected actual)
   "Return the result of an equal assertion."
   (and
    (<= (length expected) (length actual))
@@ -441,7 +445,7 @@ assertion.")
   (:documentation
    "Result of a failed error assertion."))
 
-(defun error-result (test expected actual)
+(defmethod assert-result ((type (eql :error)) test expected actual)
   "Return the result of an error assertion."
   (declare (ignore test))
   (or
@@ -471,7 +475,7 @@ assertion.")
          (equal item1 item2)
          (%expansion-equal (rest form1) (rest form2)))))))
 
-(defun macro-result (test expected actual)
+(defmethod assert-result ((type (eql  :macro)) test expected actual)
   "Return the result of a macro assertion."
   (declare (ignore test))
   (%expansion-equal (first expected) (first actual)))
@@ -481,7 +485,7 @@ assertion.")
   (:documentation
    "Result of a failed boolean assertion."))
 
-(defun boolean-result (test expected actual)
+(defmethod assert-result ((type (eql :result)) test expected actual)
   "Return the result of a result assertion."
   (declare (ignore test))
   (logically-equal (car actual) (car expected)))
@@ -491,21 +495,12 @@ assertion.")
   (:documentation
    "Result of a failed output assertion."))
 
-(defun output-result (test expected actual)
+(defmethod assert-result ((type (eql :output)) test expected actual)
   "Return the result of an output assertion."
   (declare (ignore test))
   (string=
    (string-trim '(#\newline #\return #\space) (car actual))
    (car expected)))
-
-(defun assert-function (type)
-  "Return the function for the assertion type."
-  (ecase type
-    (:equal #'equal-result)
-    (:error #'error-result)
-    (:macro #'macro-result)
-    (:result #'boolean-result)
-    (:output #'output-result)))
 
 (defun assert-class (type)
   "Return the class for the assertion type."
@@ -521,8 +516,7 @@ assertion.")
   "Perform the assertion and record the results."
   (let* ((actual (multiple-value-list (funcall code-thunk)))
          (expected (multiple-value-list (funcall expected-thunk)))
-         (result
-          (funcall (assert-function type) test expected actual)))
+         (result (assert-result type test expected actual)))
     (if result
         (incf *pass*)
         (push (make-instance
