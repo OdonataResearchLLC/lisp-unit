@@ -154,7 +154,8 @@ assertion.")
    ((gethash (find-package package) *test-db*))
    (create
     (setf (gethash package *test-db*) (make-hash-table)))
-   (t (warn "No tests defined for package: ~S" package))))
+   (t (error "No tests defined for package ~A."
+             (package-name package)))))
 
 ;;; Global tags database
 
@@ -167,7 +168,8 @@ assertion.")
    ((gethash (find-package package) *tag-db*))
    (create
     (setf (gethash package *tag-db*) (make-hash-table)))
-   (t (warn "No tags defined for package: ~S" package))))
+   (t (error "No tags defined for package ~A."
+             (package-name package)))))
 
 ;;; Unit test definition
 
@@ -246,16 +248,16 @@ assertion.")
   "Return the documentation for the test."
   (let ((unit-test (gethash name (package-table package))))
     (if (null unit-test)
-        (warn "No code defined for test ~A in package ~S."
-              name package)
+        (warn "No test ~A in package ~A."
+              name (package-name package))
         (doc unit-test))))
 
 (defun test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
   (let ((unit-test (gethash name (package-table package))))
     (if (null unit-test)
-        (warn "No code defined for test ~A in package ~S."
-              name package)
+        (warn "No test ~A in package ~A."
+              name (package-name package))
         (code unit-test))))
 
 (defun remove-tests (names &optional (package *package*))

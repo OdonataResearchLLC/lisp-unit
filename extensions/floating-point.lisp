@@ -157,7 +157,7 @@
   the Definition 1.3 in [NumAlgoC] for cases when either the exact
   or the approximate value equals zero. According to Definition 1.3,
   the relative error is identically equal to 1 in those cases. This
-  function returns the absolue error in those cases. This is more
+  function returns the absolute error in those cases. This is more
   useful for testing.
 |#
 (defun %relative-error (exact approximate)
