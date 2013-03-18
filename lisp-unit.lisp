@@ -260,7 +260,7 @@ assertion.")
               name (package-name package))
         (code unit-test))))
 
-(defun remove-tests (names &optional (package *package*))
+(defun remove-tests (&optional (names :all) (package *package*))
   "Remove individual tests or entire sets."
   (if (eq :all names)
       (if (null package)
@@ -307,13 +307,13 @@ assertion.")
     (when tags
       (loop for tag being each hash-key in tags collect tag))))
 
-(defun tagged-tests (tags &optional (package *package*))
+(defun tagged-tests (&optional (tags :all) (package *package*))
   "Return a list of the tests associated with the tags."
   (if (eq :all tags)
       (%tests-from-all-tags package)
       (%tests-from-tags tags package)))
 
-(defun remove-tags (tags &optional (package *package*))
+(defun remove-tags (&optional (tags :all) (package *package*))
   "Remove individual tags or entire sets."
   (if (eq :all tags)
       (if (null package)
@@ -756,14 +756,14 @@ assertion.")
    (summarize-results results)
    (return results)))
 
-(defun run-tests (test-names &optional (package *package*))
+(defun run-tests (&optional (test-names :all) (package *package*))
   "Run the specified tests in package."
   (reset-counters)
   (if (eq :all test-names)
       (%run-all-thunks package)
       (%run-thunks test-names package)))
 
-(defun run-tags (tags &optional (package *package*))
+(defun run-tags (&optional (tags :all) (package *package*))
   "Run the tests associated with the specified tags in package."
   (reset-counters)
   (%run-thunks (tagged-tests tags package) package))
