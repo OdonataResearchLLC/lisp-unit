@@ -37,12 +37,17 @@ loaded using either [Quicklisp][] or [ASDF][].
 2. Load using [Quicklisp][] : `(ql:quickload :lisp-unit)`.
 3. Load using [ASDF][] : `(asdf:load-system :lisp-unit)`.
 
-## Version 0.9.4 Features
+## Version 0.9.5 Features
 
-Output for the [Test Anything Protocol][TAP] has been implemented as
-an extension by [Ryan Davis][ryepup] of AccelerationNet. Ryan is also
-responsible for the signal test completion feature that is used for
-the [TAP][] output.
+No new features, improved the usability based on user feedback. The
+list of tests or tags to the following functions is now optional and
+defaults to `:ALL`.
+
+* `(remove-tests [names] [package])`
+* `(tagged-tests [tags] [package])`
+* `(remove-tags [tags] [package])`
+* `(run-tests [names] [package])`
+* `(run-tags [tags] [package])`
 
 ## Version 1 Remaining Tasks
 
@@ -63,12 +68,8 @@ the [TAP][] output.
 [ASDF]: <http://common-lisp.net/project/asdf/> "ASDF"
 [TAP]: <http://testanything.org/> "Test Anything Protocol"
 
-## 0.9.4 Acknowledgments
+## 0.9.5 Acknowledgments
 
-* [Ryan Davis][ryepup] for the TAP extension and signaling test completion.
-* [Russ Tyndall][bobbysmith007] for cleaning up the use-debugger option.
-* [Mark Cox][markcox80] for catching a lisp-unit bug in CCL.
+* [Jesse Alama][jessealama] for usability feedback.
 
-[ryepup]: <https://github.com/ryepup> "Ryan Davis"
-[bobbysmith007]: <https://github.com/bobbysmith007> "Russ Tyndall"
-[markcox80]: <https://github.com/markcox80> "Mark Cox"
+[jessealama]: <https://github.com/jessealama> "Jesse Alama"
