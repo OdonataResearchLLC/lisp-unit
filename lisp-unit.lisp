@@ -154,8 +154,7 @@ assertion.")
    ((gethash (find-package package) *test-db*))
    (create
     (setf (gethash package *test-db*) (make-hash-table)))
-   (t (error "No tests defined for package ~A."
-             (package-name package)))))
+   (t nil)))
 
 ;;; Global tags database
 
@@ -168,8 +167,7 @@ assertion.")
    ((gethash (find-package package) *tag-db*))
    (create
     (setf (gethash package *tag-db*) (make-hash-table)))
-   (t (error "No tags defined for package ~A."
-             (package-name package)))))
+   (t nil)))
 
 ;;; Unit test definition
 
@@ -242,25 +240,29 @@ assertion.")
 (defun list-tests (&optional (package *package*))
   "Return a list of the tests in package."
   (let ((table (package-table package)))
-    (when table
+    (when (hash-table-p table)
       (loop for test-name being each hash-key in table
             collect test-name))))
 
 (defun test-documentation (name &optional (package *package*))
   "Return the documentation for the test."
-  (let ((unit-test (gethash name (package-table package))))
-    (if (null unit-test)
-        (warn "No test ~A in package ~A."
-              name (package-name package))
-        (doc unit-test))))
+  (let ((table (package-table package)))
+    (when (hash-table-p table)
+      (let ((unit-test (gethash name table)))
+	(if (null unit-test)
+	    (warn "No test ~A in package ~A."
+		  name (package-name package))
+	    (doc unit-test))))))
 
 (defun test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
-  (let ((unit-test (gethash name (package-table package))))
-    (if (null unit-test)
-        (warn "No test ~A in package ~A."
-              name (package-name package))
-        (code unit-test))))
+  (let ((table (package-table package)))
+    (when (hash-table-p table)
+      (let ((unit-test (gethash name table)))
+	(if (null unit-test)
+	    (warn "No test ~A in package ~A."
+		  name (package-name package))
+	    (code unit-test))))))
 
 (defun remove-tests (&optional (names :all) (package *package*))
   "Remove individual tests or entire sets."
@@ -726,38 +728,40 @@ assertion.")
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
-  (when (hash-table-p (package-table package))
-    (loop
-       with results = (make-instance 'test-results-db)
-       for test-name being each hash-key in (package-table package)
-       using (hash-value unit-test)
-       if unit-test do
-	 (record-result test-name (code unit-test) results)
-       else do
-	 (push test-name (missing-tests results))
-       ;; Summarize and return the test results
-       finally
-	 (when *signal-results*
-	   (signal 'test-run-complete :results results))
-	 (summarize-results results)
-	 (return results))))
+  (let ((table (package-table package)))
+    (when (hash-table-p table)
+      (loop
+	 with results = (make-instance 'test-results-db)
+	 for test-name being each hash-key in table
+	 using (hash-value unit-test)
+	 if unit-test do
+	   (record-result test-name (code unit-test) results)
+	 else do
+	   (push test-name (missing-tests results))
+	 ;; Summarize and return the test results
+	 finally
+	   (when *signal-results*
+	     (signal 'test-run-complete :results results))
+	   (summarize-results results)
+	   (return results)))))
 
 (defun %run-thunks (test-names &optional (package *package*))
   "Run the list of test thunks in the package."
   (loop
-   with table = (package-table package)
-   and results = (make-instance 'test-results-db)
-   for test-name in test-names
-   as unit-test = (gethash test-name table)
-   if unit-test do
-   (record-result test-name (code unit-test) results)
-   else do
-   (push test-name (missing-tests results))
-   finally
-   (when *signal-results*
-     (signal 'test-run-complete :results results))
-   (summarize-results results)
-   (return results)))
+     with table = (package-table package)
+     with results = (make-instance 'test-results-db)
+     initially (unless (hash-table-p table) (return nil))
+     for test-name in test-names
+     as unit-test = (gethash test-name table)
+     if unit-test do
+       (record-result test-name (code unit-test) results)
+     else do
+       (push test-name (missing-tests results))
+     finally
+       (when *signal-results*
+	 (signal 'test-run-complete :results results))
+       (summarize-results results)
+       (return results)))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
   "Run the specified tests in package."
