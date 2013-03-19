@@ -154,7 +154,8 @@ assertion.")
    ((gethash (find-package package) *test-db*))
    (create
     (setf (gethash package *test-db*) (make-hash-table)))
-   (t (warn "No tests defined for package: ~S" package))))
+   (t (error "No tests defined for package ~A."
+             (package-name package)))))
 
 ;;; Global tags database
 
@@ -167,7 +168,8 @@ assertion.")
    ((gethash (find-package package) *tag-db*))
    (create
     (setf (gethash package *tag-db*) (make-hash-table)))
-   (t (warn "No tags defined for package: ~S" package))))
+   (t (error "No tags defined for package ~A."
+             (package-name package)))))
 
 ;;; Unit test definition
 
@@ -248,19 +250,19 @@ assertion.")
   "Return the documentation for the test."
   (let ((unit-test (gethash name (package-table package))))
     (if (null unit-test)
-        (warn "No code defined for test ~A in package ~S."
-              name package)
+        (warn "No test ~A in package ~A."
+              name (package-name package))
         (doc unit-test))))
 
 (defun test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
   (let ((unit-test (gethash name (package-table package))))
     (if (null unit-test)
-        (warn "No code defined for test ~A in package ~S."
-              name package)
+        (warn "No test ~A in package ~A."
+              name (package-name package))
         (code unit-test))))
 
-(defun remove-tests (names &optional (package *package*))
+(defun remove-tests (&optional (names :all) (package *package*))
   "Remove individual tests or entire sets."
   (if (eq :all names)
       (if (null package)
@@ -307,13 +309,13 @@ assertion.")
     (when tags
       (loop for tag being each hash-key in tags collect tag))))
 
-(defun tagged-tests (tags &optional (package *package*))
+(defun tagged-tests (&optional (tags :all) (package *package*))
   "Return a list of the tests associated with the tags."
   (if (eq :all tags)
       (%tests-from-all-tags package)
       (%tests-from-tags tags package)))
 
-(defun remove-tags (tags &optional (package *package*))
+(defun remove-tags (&optional (tags :all) (package *package*))
   "Remove individual tags or entire sets."
   (if (eq :all tags)
       (if (null package)
@@ -757,14 +759,14 @@ assertion.")
    (summarize-results results)
    (return results)))
 
-(defun run-tests (test-names &optional (package *package*))
+(defun run-tests (&optional (test-names :all) (package *package*))
   "Run the specified tests in package."
   (reset-counters)
   (if (eq :all test-names)
       (%run-all-thunks package)
       (%run-thunks test-names package)))
 
-(defun run-tags (tags &optional (package *package*))
+(defun run-tags (&optional (tags :all) (package *package*))
   "Run the tests associated with the specified tags in package."
   (reset-counters)
   (%run-thunks (tagged-tests tags package) package))
