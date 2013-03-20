@@ -3,22 +3,22 @@
 #|
 Copyright (c) 2004-2005 Christopher K. Riesbeck
 
-Permission is hereby granted, free of charge, to any person obtaining 
-a copy of this software and associated documentation files (the "Software"), 
-to deal in the Software without restriction, including without limitation 
-the rights to use, copy, modify, merge, publish, distribute, sublicense, 
-and/or sell copies of the Software, and to permit persons to whom the 
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
 Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included 
+The above copyright notice and this permission notice shall be included
 in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS 
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR 
-OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, 
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 
@@ -154,8 +154,7 @@ assertion.")
    ((gethash (find-package package) *test-db*))
    (create
     (setf (gethash package *test-db*) (make-hash-table)))
-   (t (error "No tests defined for package ~A."
-             (package-name package)))))
+   (t nil)))
 
 ;;; Global tags database
 
@@ -168,8 +167,7 @@ assertion.")
    ((gethash (find-package package) *tag-db*))
    (create
     (setf (gethash package *tag-db*) (make-hash-table)))
-   (t (error "No tags defined for package ~A."
-             (package-name package)))))
+   (t nil)))
 
 ;;; Unit test definition
 
@@ -242,25 +240,29 @@ assertion.")
 (defun list-tests (&optional (package *package*))
   "Return a list of the tests in package."
   (let ((table (package-table package)))
-    (when table
+    (when (hash-table-p table)
       (loop for test-name being each hash-key in table
             collect test-name))))
 
 (defun test-documentation (name &optional (package *package*))
   "Return the documentation for the test."
-  (let ((unit-test (gethash name (package-table package))))
-    (if (null unit-test)
-        (warn "No test ~A in package ~A."
-              name (package-name package))
-        (doc unit-test))))
+  (let ((table (package-table package)))
+    (when (hash-table-p table)
+      (let ((unit-test (gethash name table)))
+	(if (null unit-test)
+	    (warn "No test ~A in package ~A."
+		  name (package-name package))
+	    (doc unit-test))))))
 
 (defun test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
-  (let ((unit-test (gethash name (package-table package))))
-    (if (null unit-test)
-        (warn "No test ~A in package ~A."
-              name (package-name package))
-        (code unit-test))))
+  (let ((table (package-table package)))
+    (when (hash-table-p table)
+      (let ((unit-test (gethash name table)))
+	(if (null unit-test)
+	    (warn "No test ~A in package ~A."
+		  name (package-name package))
+	    (code unit-test))))))
 
 (defun remove-tests (&optional (names :all) (package *package*))
   "Remove individual tests or entire sets."
@@ -279,6 +281,7 @@ assertion.")
                       name (package-name package)))
           ;; Remove tests from tags
           (loop with tags = (package-tags package)
+	        initially (unless (hash-table-p tags) (return nil))
                 for tag being each hash-key in tags
                 using (hash-value tagged-tests)
                 do
@@ -290,13 +293,16 @@ assertion.")
 
 (defun %tests-from-all-tags (&optional (package *package*))
   "Return all of the tests that have been tagged."
-  (loop for tests being each hash-value in (package-tags package)
+  (loop with tags = (package-tags package)
+        initially (unless (hash-table-p tags) (return nil))
+        for tests being each hash-value in tags
         nconc (copy-list tests) into all-tests
         finally (return (delete-duplicates all-tests))))
 
 (defun %tests-from-tags (tags &optional (package *package*))
   "Return the tests associated with the tags."
   (loop with table = (package-tags package)
+        initially (unless (hash-table-p table) (return nil))
         for tag in tags
         as tests = (gethash tag table)
         if (null tests) do (warn "No tests tagged with ~S." tag)
@@ -306,7 +312,7 @@ assertion.")
 (defun list-tags (&optional (package *package*))
   "Return a list of the tags in package."
   (let ((tags (package-tags package)))
-    (when tags
+    (when (hash-table-p tags)
       (loop for tag being each hash-key in tags collect tag))))
 
 (defun tagged-tests (&optional (tags :all) (package *package*))
@@ -353,12 +359,16 @@ assertion.")
 
 (defmacro assert-expands (expansion form &rest extras)
   "Assert whether form expands to expansion."
-  `(expand-assert :macro ,form 
+  `(expand-assert :macro ,form
                   (expand-macro-form ,form nil)
                   ',expansion ,extras))
 
 (defmacro assert-false (form &rest extras)
   "Assert whether the form is false."
+  `(expand-assert :result ,form ,form nil ,extras))
+
+(defmacro assert-nil (form &rest extras)
+  "Assert whether the form is NIL."
   `(expand-assert :result ,form ,form nil ,extras))
 
 (defmacro assert-equality (test expected form &rest extras)
@@ -460,7 +470,12 @@ assertion.")
 (defmethod record-failure ((type (eql :equal))
                            form actual expected extras test)
   "Return an instance of an equal failure result."
-  (call-next-method 'equal-result form actual expected extras test))
+  (make-instance 'equal-result
+                 :form form
+                 :actual actual
+                 :expected expected
+                 :extras extras
+                 :test test))
 
 (defclass error-result (failure-result)
   ()
@@ -477,7 +492,12 @@ assertion.")
 (defmethod record-failure ((type (eql :error))
                            form actual expected extras test)
   "Return an instance of an error failure result."
-  (call-next-method 'error-result form actual expected extras test))
+  (make-instance 'error-result
+                 :form form
+                 :actual actual
+                 :expected expected
+                 :extras extras
+                 :test test))
 
 (defclass macro-result (failure-result)
   ()
@@ -510,7 +530,12 @@ assertion.")
 (defmethod record-failure ((type (eql :macro))
                            form actual expected extras test)
   "Return an instance of a macro failure result."
-  (call-next-method 'macro-result form actual expected extras test))
+  (make-instance 'macro-result
+                 :form form
+                 :actual actual
+                 :expected expected
+                 :extras extras
+                 :test test))
 
 (defclass boolean-result (failure-result)
   ()
@@ -525,7 +550,12 @@ assertion.")
 (defmethod record-failure ((type (eql :result))
                            form actual expected extras test)
   "Return an instance of a boolean failure result."
-  (call-next-method 'boolean-result form actual expected extras test))
+  (make-instance 'boolean-result
+		 :form form
+		 :actual actual
+		 :expected expected
+		 :extras extras
+		 :test test))
 
 (defclass output-result (failure-result)
   ()
@@ -542,7 +572,12 @@ assertion.")
 (defmethod record-failure ((type (eql :output))
                            form actual expected extras test)
   "Return an instance of an output failure result."
-  (call-next-method 'output-result form actual expected extras test))
+  (make-instance 'output-result
+		 :form form
+		 :actual actual
+		 :expected expected
+		 :extras extras
+		 :test test))
 
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
@@ -726,38 +761,40 @@ assertion.")
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
-  (when (hash-table-p (package-table package))
-    (loop
-       with results = (make-instance 'test-results-db)
-       for test-name being each hash-key in (package-table package)
-       using (hash-value unit-test)
-       if unit-test do
-	 (record-result test-name (code unit-test) results)
-       else do
-	 (push test-name (missing-tests results))
-       ;; Summarize and return the test results
-       finally
-	 (when *signal-results*
-	   (signal 'test-run-complete :results results))
-	 (summarize-results results)
-	 (return results))))
+  (let ((table (package-table package)))
+    (when (hash-table-p table)
+      (loop
+	 with results = (make-instance 'test-results-db)
+	 for test-name being each hash-key in table
+	 using (hash-value unit-test)
+	 if unit-test do
+	   (record-result test-name (code unit-test) results)
+	 else do
+	   (push test-name (missing-tests results))
+	 ;; Summarize and return the test results
+	 finally
+	   (when *signal-results*
+	     (signal 'test-run-complete :results results))
+	   (summarize-results results)
+	   (return results)))))
 
 (defun %run-thunks (test-names &optional (package *package*))
   "Run the list of test thunks in the package."
   (loop
-   with table = (package-table package)
-   and results = (make-instance 'test-results-db)
-   for test-name in test-names
-   as unit-test = (gethash test-name table)
-   if unit-test do
-   (record-result test-name (code unit-test) results)
-   else do
-   (push test-name (missing-tests results))
-   finally
-   (when *signal-results*
-     (signal 'test-run-complete :results results))
-   (summarize-results results)
-   (return results)))
+     with table = (package-table package)
+     with results = (make-instance 'test-results-db)
+     initially (unless (hash-table-p table) (return nil))
+     for test-name in test-names
+     as unit-test = (gethash test-name table)
+     if unit-test do
+       (record-result test-name (code unit-test) results)
+     else do
+       (push test-name (missing-tests results))
+     finally
+       (when *signal-results*
+	 (signal 'test-run-complete :results results))
+       (summarize-results results)
+       (return results)))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
   "Run the specified tests in package."
