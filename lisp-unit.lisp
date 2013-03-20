@@ -466,7 +466,12 @@ assertion.")
 (defmethod record-failure ((type (eql :equal))
                            form actual expected extras test)
   "Return an instance of an equal failure result."
-  (call-next-method 'equal-result form actual expected extras test))
+  (make-instance 'equal-result
+                 :form form
+                 :actual actual
+                 :expected expected
+                 :extras extras
+                 :test test))
 
 (defclass error-result (failure-result)
   ()
@@ -483,7 +488,12 @@ assertion.")
 (defmethod record-failure ((type (eql :error))
                            form actual expected extras test)
   "Return an instance of an error failure result."
-  (call-next-method 'error-result form actual expected extras test))
+  (make-instance 'error-result
+                 :form form
+                 :actual actual
+                 :expected expected
+                 :extras extras
+                 :test test))
 
 (defclass macro-result (failure-result)
   ()
@@ -516,7 +526,12 @@ assertion.")
 (defmethod record-failure ((type (eql :macro))
                            form actual expected extras test)
   "Return an instance of a macro failure result."
-  (call-next-method 'macro-result form actual expected extras test))
+  (make-instance 'macro-result
+                 :form form
+                 :actual actual
+                 :expected expected
+                 :extras extras
+                 :test test))
 
 (defclass boolean-result (failure-result)
   ()
@@ -531,7 +546,12 @@ assertion.")
 (defmethod record-failure ((type (eql :result))
                            form actual expected extras test)
   "Return an instance of a boolean failure result."
-  (call-next-method 'boolean-result form actual expected extras test))
+  (make-instance 'boolean-result
+		 :form form
+		 :actual actual
+		 :expected expected
+		 :extras extras
+		 :test test))
 
 (defclass output-result (failure-result)
   ()
@@ -548,7 +568,12 @@ assertion.")
 (defmethod record-failure ((type (eql :output))
                            form actual expected extras test)
   "Return an instance of an output failure result."
-  (call-next-method 'output-result form actual expected extras test))
+  (make-instance 'output-result
+		 :form form
+		 :actual actual
+		 :expected expected
+		 :extras extras
+		 :test test))
 
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
