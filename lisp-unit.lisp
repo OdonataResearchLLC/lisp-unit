@@ -367,6 +367,10 @@ assertion.")
   "Assert whether the form is false."
   `(expand-assert :result ,form ,form nil ,extras))
 
+(defmacro assert-nil (form &rest extras)
+  "Assert whether the form is NIL."
+  `(expand-assert :result ,form ,form nil ,extras))
+
 (defmacro assert-equality (test expected form &rest extras)
   "Assert whether expected and form are equal according to test."
   `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
