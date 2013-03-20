@@ -281,6 +281,7 @@ assertion.")
                       name (package-name package)))
           ;; Remove tests from tags
           (loop with tags = (package-tags package)
+	        initially (unless (hash-table-p tags) (return nil))
                 for tag being each hash-key in tags
                 using (hash-value tagged-tests)
                 do
@@ -292,13 +293,16 @@ assertion.")
 
 (defun %tests-from-all-tags (&optional (package *package*))
   "Return all of the tests that have been tagged."
-  (loop for tests being each hash-value in (package-tags package)
+  (loop with tags = (package-tags package)
+        initially (unless (hash-table-p tags) (return nil))
+        for tests being each hash-value in tags
         nconc (copy-list tests) into all-tests
         finally (return (delete-duplicates all-tests))))
 
 (defun %tests-from-tags (tags &optional (package *package*))
   "Return the tests associated with the tags."
   (loop with table = (package-tags package)
+        initially (unless (hash-table-p table) (return nil))
         for tag in tags
         as tests = (gethash tag table)
         if (null tests) do (warn "No tests tagged with ~S." tag)
@@ -308,7 +312,7 @@ assertion.")
 (defun list-tags (&optional (package *package*))
   "Return a list of the tags in package."
   (let ((tags (package-tags package)))
-    (when tags
+    (when (hash-table-p tags)
       (loop for tag being each hash-key in tags collect tag))))
 
 (defun tagged-tests (&optional (tags :all) (package *package*))
