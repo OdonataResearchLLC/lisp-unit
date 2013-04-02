@@ -435,7 +435,7 @@ assertion.")
   (:documentation
    "Failure details of the assertion."))
 
-(defmethod record-failure (class form actual expected extras test)
+(defun %record-failure (class form actual expected extras test)
   "Return an instance of the failure result."
   (make-instance class
                  :form form
@@ -458,7 +458,7 @@ assertion.")
 (defmethod record-failure ((type (eql :equal))
                            form actual expected extras test)
   "Return an instance of an equal failure result."
-  (call-next-method 'equal-result form actual expected extras test))
+  (%record-failure 'equal-result form actual expected extras test))
 
 (defclass error-result (failure-result)
   ()
@@ -475,7 +475,7 @@ assertion.")
 (defmethod record-failure ((type (eql :error))
                            form actual expected extras test)
   "Return an instance of an error failure result."
-  (call-next-method 'error-result form actual expected extras test))
+  (%record-failure 'error-result form actual expected extras test))
 
 (defclass macro-result (failure-result)
   ()
@@ -508,7 +508,7 @@ assertion.")
 (defmethod record-failure ((type (eql :macro))
                            form actual expected extras test)
   "Return an instance of a macro failure result."
-  (call-next-method 'macro-result form actual expected extras test))
+  (%record-failure 'macro-result form actual expected extras test))
 
 (defclass boolean-result (failure-result)
   ()
@@ -523,7 +523,7 @@ assertion.")
 (defmethod record-failure ((type (eql :result))
                            form actual expected extras test)
   "Return an instance of a boolean failure result."
-  (call-next-method 'boolean-result form actual expected extras test))
+  (%record-failure 'boolean-result form actual expected extras test))
 
 (defclass output-result (failure-result)
   ()
@@ -540,7 +540,7 @@ assertion.")
 (defmethod record-failure ((type (eql :output))
                            form actual expected extras test)
   "Return an instance of an output failure result."
-  (call-next-method 'output-result form actual expected extras test))
+  (%record-failure 'output-result form actual expected extras test))
 
 (defun internal-assert
        (type form code-thunk expected-thunk extras test)
