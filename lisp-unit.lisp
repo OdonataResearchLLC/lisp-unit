@@ -144,23 +144,61 @@ assertion.")
   "Signal the results for extensibility."
   (setq *signal-results* flag))
 
+;;; Utility
+
+(defun print-warning (warning &optional (stream *error-output*))
+  "May want to handle the warning with HANDLER-CASE."
+  (format stream "~&Warning: ~A~&" warning))
+
 ;;; Global unit test database
 
 (defparameter *test-db* (make-hash-table :test #'eq)
   "The unit test database is simply a hash table.")
+
+(defun null-tests-warning-report (null-tests-warning stream)
+  "Write the null-tests-warning to the stream."
+  (format stream "No tests defined for package ~A."
+          (tests-package-name null-tests-warning)))
+
+(define-condition null-tests-warning (simple-warning)
+  ((name
+    :type string
+    :initarg :name
+    :reader tests-package-name))
+  (:report null-tests-warning-report))
 
 (defun package-table (package &optional create)
   (cond
    ((gethash (find-package package) *test-db*))
    (create
     (setf (gethash package *test-db*) (make-hash-table)))
-   (t (error "No tests defined for package ~A."
-             (package-name package)))))
+   (t (warn 'null-tests-warning :name (package-name package)))))
+
+(defmacro with-package-table ((table
+                               &optional (package *package*) create)
+                              &body body)
+  "Execute the body only if the package table exists."
+  (let ((gtable (gensym "TABLE-")))
+    `(let* ((,gtable (package-table ,package ,create))
+            (,table ,gtable))
+       (when (hash-table-p ,gtable) ,@body))))
 
 ;;; Global tags database
 
 (defparameter *tag-db* (make-hash-table :test #'eq)
   "The tag database is simply a hash table.")
+
+(defun null-tags-warning-report (null-tags-warning stream)
+  "Write the null-tags-warning to the stream."
+  (format stream "No tags defined for package ~A."
+          (tags-package-name null-tags-warning)))
+
+(define-condition null-tags-warning (simple-warning)
+  ((name
+    :type string
+    :initarg :name
+    :reader tags-package-name))
+  (:report null-tags-warning-report))
 
 (defun package-tags (package &optional create)
   "Return the tags DB for the package."
@@ -168,8 +206,16 @@ assertion.")
    ((gethash (find-package package) *tag-db*))
    (create
     (setf (gethash package *tag-db*) (make-hash-table)))
-   (t (error "No tags defined for package ~A."
-             (package-name package)))))
+   (t (warn 'null-tags-warning :name (package-name package)))))
+
+(defmacro with-package-tags ((table
+                              &optional (package *package*) create)
+                             &body body)
+  "Execute the body only if the package tags exists."
+  (let ((gtable (gensym "TABLE-")))
+    `(let* ((,gtable (package-tags ,package ,create))
+            (,table ,gtable))
+       (when (hash-table-p ,gtable) ,@body))))
 
 ;;; Unit test definition
 
@@ -239,26 +285,27 @@ assertion.")
 
 (defun list-tests (&optional (package *package*))
   "Return a list of the tests in package."
-  (let ((table (package-table package)))
-    (when table
-      (loop for test-name being each hash-key in table
-            collect test-name))))
+  (with-package-table (table package)
+    (loop for test-name being each hash-key in table
+          collect test-name)))
 
 (defun test-documentation (name &optional (package *package*))
   "Return the documentation for the test."
-  (let ((unit-test (gethash name (package-table package))))
-    (if (null unit-test)
-        (warn "No test ~A in package ~A."
-              name (package-name package))
-        (doc unit-test))))
+  (with-package-table (table package)
+    (let ((unit-test (gethash name table)))
+      (if (null unit-test)
+          (warn "No test ~A in package ~A."
+                name (package-name package))
+          (doc unit-test)))))
 
 (defun test-code (name &optional (package *package*))
   "Returns the code stored for the test name."
-  (let ((unit-test (gethash name (package-table package))))
-    (if (null unit-test)
-        (warn "No test ~A in package ~A."
-              name (package-name package))
-        (code unit-test))))
+  (with-package-table (table package)
+    (let ((unit-test (gethash name table)))
+      (if (null unit-test)
+          (warn "No test ~A in package ~A."
+                name (package-name package))
+          (code unit-test)))))
 
 (defun remove-tests (&optional (names :all) (package *package*))
   "Remove individual tests or entire sets."
@@ -268,16 +315,16 @@ assertion.")
           (progn
             (remhash (find-package package) *test-db*)
             (remhash (find-package package) *tag-db*)))
-      (let ((table (package-table package)))
-        (unless (null table)
-          ;; Remove tests
+      (progn
+        ;; Remove tests
+        (with-package-table (table package)
           (loop for name in names
                 unless (remhash name table) do
                 (warn "No test ~A in package ~A to remove."
-                      name (package-name package)))
-          ;; Remove tests from tags
-          (loop with tags = (package-tags package)
-                for tag being each hash-key in tags
+                      name (package-name package))))
+        ;; Remove tests from tags
+        (with-package-tags (tags package)
+          (loop for tag being each hash-key in tags
                 using (hash-value tagged-tests)
                 do
                 (setf
@@ -288,24 +335,24 @@ assertion.")
 
 (defun %tests-from-all-tags (&optional (package *package*))
   "Return all of the tests that have been tagged."
-  (loop for tests being each hash-value in (package-tags package)
-        nconc (copy-list tests) into all-tests
-        finally (return (delete-duplicates all-tests))))
+  (with-package-tags (table package)
+    (loop for tests being each hash-value in table
+          nconc (copy-list tests) into all-tests
+          finally (return (delete-duplicates all-tests)))))
 
 (defun %tests-from-tags (tags &optional (package *package*))
   "Return the tests associated with the tags."
-  (loop with table = (package-tags package)
-        for tag in tags
-        as tests = (gethash tag table)
-        if (null tests) do (warn "No tests tagged with ~S." tag)
-        else nconc (copy-list tests) into all-tests
-        finally (return (delete-duplicates all-tests))))
+  (with-package-tags (table package)
+    (loop for tag in tags
+          as tests = (gethash tag table)
+          if (null tests) do (warn "No tests tagged with ~S." tag)
+          else nconc (copy-list tests) into all-tests
+          finally (return (delete-duplicates all-tests)))))
 
 (defun list-tags (&optional (package *package*))
   "Return a list of the tags in package."
-  (let ((tags (package-tags package)))
-    (when tags
-      (loop for tag being each hash-key in tags collect tag))))
+  (with-package-tags (table package)
+    (loop for tag being each hash-key in table collect tag)))
 
 (defun tagged-tests (&optional (tags :all) (package *package*))
   "Return a list of the tests associated with the tags."
@@ -319,8 +366,8 @@ assertion.")
       (if (null package)
           (clrhash *tag-db*)
           (remhash (find-package package) *tag-db*))
-      (let ((table (package-tags package)))
-        (unless (null table)
+      (with-package-tags (tags package)
+        (with-package-table (table package)
           (loop for tag in tags
                 unless (remhash tag table) do
                 (warn "No tag ~A in package ~A to remove."
@@ -724,37 +771,38 @@ assertion.")
 
 (defun %run-all-thunks (&optional (package *package*))
   "Run all of the test thunks in the package."
-  (loop
-   with results = (make-instance 'test-results-db)
-   for test-name being each hash-key in (package-table package)
-   using (hash-value unit-test)
-   if unit-test do
-   (record-result test-name (code unit-test) results)
-   else do
-   (push test-name (missing-tests results))
-   ;; Summarize and return the test results
-   finally
-   (when *signal-results*
-     (signal 'test-run-complete :results results))
-   (summarize-results results)
-   (return results)))
+  (with-package-table (table package)
+    (loop
+     with results = (make-instance 'test-results-db)
+     for test-name being each hash-key in table
+     using (hash-value unit-test)
+     if unit-test do
+     (record-result test-name (code unit-test) results)
+     else do
+     (push test-name (missing-tests results))
+     ;; Summarize and return the test results
+     finally
+     (when *signal-results*
+       (signal 'test-run-complete :results results))
+     (summarize-results results)
+     (return results))))
 
 (defun %run-thunks (test-names &optional (package *package*))
   "Run the list of test thunks in the package."
-  (loop
-   with table = (package-table package)
-   and results = (make-instance 'test-results-db)
-   for test-name in test-names
-   as unit-test = (gethash test-name table)
-   if unit-test do
-   (record-result test-name (code unit-test) results)
-   else do
-   (push test-name (missing-tests results))
-   finally
-   (when *signal-results*
-     (signal 'test-run-complete :results results))
-   (summarize-results results)
-   (return results)))
+  (with-package-table (table package)
+    (loop
+     with results = (make-instance 'test-results-db)
+     for test-name in test-names
+     as unit-test = (gethash test-name table)
+     if unit-test do
+     (record-result test-name (code unit-test) results)
+     else do
+     (push test-name (missing-tests results))
+     finally
+     (when *signal-results*
+       (signal 'test-run-complete :results results))
+     (summarize-results results)
+     (return results))))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
   "Run the specified tests in package."
