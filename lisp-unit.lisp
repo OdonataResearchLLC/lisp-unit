@@ -168,11 +168,12 @@ assertion.")
   (:report null-tests-warning-report))
 
 (defun package-table (package &optional create)
-  (cond
-   ((gethash (find-package package) *test-db*))
-   (create
-    (setf (gethash package *test-db*) (make-hash-table)))
-   (t (warn 'null-tests-warning :name (package-name package)))))
+  (let ((packobj (find-package package)))
+    (cond
+     ((gethash packobj *test-db*))
+     (create
+      (setf (gethash packobj *test-db*) (make-hash-table)))
+     (t (warn 'null-tests-warning :name (package-name package))))))
 
 (defmacro with-package-table ((table
                                &optional (package *package*) create)
@@ -202,11 +203,12 @@ assertion.")
 
 (defun package-tags (package &optional create)
   "Return the tags DB for the package."
-  (cond
-   ((gethash (find-package package) *tag-db*))
-   (create
-    (setf (gethash package *tag-db*) (make-hash-table)))
-   (t (warn 'null-tags-warning :name (package-name package)))))
+  (let ((packobj (find-package package)))
+    (cond
+     ((gethash packobj *tag-db*))
+     (create
+      (setf (gethash packobj *tag-db*) (make-hash-table)))
+     (t (warn 'null-tags-warning :name (package-name package))))))
 
 (defmacro with-package-tags ((table
                               &optional (package *package*) create)
