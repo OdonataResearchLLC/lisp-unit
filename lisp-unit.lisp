@@ -144,12 +144,6 @@ assertion.")
   "Signal the results for extensibility."
   (setq *signal-results* flag))
 
-;;; Utility
-
-(defun print-warning (warning &optional (stream *error-output*))
-  "May want to handle the warning with HANDLER-CASE."
-  (format stream "~&Warning: ~A~&" warning))
-
 ;;; Global unit test database
 
 (defparameter *test-db* (make-hash-table :test #'eq)
