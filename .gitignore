@@ -1,4 +1,5 @@
 # Ignore FASL files
 *.fasl
 *.lx64fsl
+*.dx64fsl
 *~
