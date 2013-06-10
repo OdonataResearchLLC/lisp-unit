@@ -362,12 +362,11 @@ assertion.")
       (if (null package)
           (clrhash *tag-db*)
           (remhash (find-package package) *tag-db*))
-      (with-package-tags (tags package)
-        (with-package-table (table package)
-          (loop for tag in tags
-                unless (remhash tag table) do
-                (warn "No tag ~A in package ~A to remove."
-                      tag (package-name package)))))))
+      (with-package-tags (tag-table package)
+        (loop for tag in tags
+              unless (remhash tag tag-table) do
+              (warn "No tag ~A in package ~A to remove."
+                    tag (package-name package))))))
 
 ;;; Assert macros
 
