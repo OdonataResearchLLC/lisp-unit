@@ -238,7 +238,7 @@ assertion.")
      ((and (stringp item) (not doc) (rest body))
       (if tag
           (values doc tag (rest body))
-          (parse-body (rest body) doc tag)))
+          (parse-body (rest body) item tag)))
      (t (values doc tag body)))))
 
 (defun test-name-error-report (test-name-error stream)
