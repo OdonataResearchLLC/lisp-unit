@@ -265,15 +265,16 @@ assertion.")
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
       `(let* ((,qname (valid-test-name ',name))
-              (doc (or ,doc (string ,qname))))
+              (doc (or ,doc (symbol-name ,qname)))
+              (package (symbol-package ,qname)))
          (setf
           ;; Unit test
-          (gethash ,qname (package-table *package* t))
+          (gethash ,qname (package-table package t))
           (make-instance 'unit-test :doc doc :code ',code))
          ;; Tags
-         (loop for tag in ',tag do
-               (pushnew
-                ,qname (gethash tag (package-tags *package* t))))
+         (loop
+          for tag in ',tag do
+          (pushnew ,qname (gethash tag (package-tags package t))))
          ;; Return the name of the test
          ,qname))))
 

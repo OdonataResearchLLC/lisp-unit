@@ -57,6 +57,10 @@
   (dotimes (i 5)
     (assert-equal i (my-sqrt (* i i)) i)))
 
+(define-test cl-user::my-sqrt
+  (dotimes (i 5)
+    (assert-equal i (my-sqrt (* i i)) i)))
+
 ;;; Macro
 
 (defmacro my-macro (arg1 arg2)
