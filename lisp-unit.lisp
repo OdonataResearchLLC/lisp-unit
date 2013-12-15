@@ -126,8 +126,9 @@ functions or even macros does not require reloading any tests.
   "If not NIL, enter the debugger when an error is encountered in an
 assertion.")
 
-(defparameter *signal-results* nil
-  "Signal the result if non NIL.")
+(defun use-debugger (&optional (flag t))
+  "Use the debugger when testing, or not."
+  (setq *use-debugger* flag))
 
 (defun use-debugger-p (condition)
   "Debug or ignore errors."
@@ -136,9 +137,8 @@ assertion.")
     (y-or-n-p "~A -- debug?" condition))
    (*use-debugger*)))
 
-(defun use-debugger (&optional (flag t))
-  "Use the debugger when testing, or not."
-  (setq *use-debugger* flag))
+(defparameter *signal-results* nil
+  "Signal the result if non NIL.")
 
 (defun signal-results (&optional (flag t))
   "Signal the results for extensibility."
