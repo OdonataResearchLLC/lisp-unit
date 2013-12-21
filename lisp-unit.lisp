@@ -260,13 +260,23 @@ assertion.")
       name
       (error 'test-name-error :datum name)))
 
+(defun test-package (name)
+  "Return the package for storing the test."
+  (multiple-value-bind (symbol status)
+      (find-symbol (symbol-name name))
+    (declare (ignore symbol))
+    (ecase status
+      ((:internal :external nil)
+       (symbol-package name))
+      (:inherited *package*))))
+
 (defmacro define-test (name &body body)
   "Store the test in the test database."
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
       `(let* ((,qname (valid-test-name ',name))
               (doc (or ,doc (symbol-name ,qname)))
-              (package (symbol-package ,qname)))
+              (package (test-package ,qname)))
          (setf
           ;; Unit test
           (gethash ,qname (package-table package t))
