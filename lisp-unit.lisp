@@ -57,7 +57,8 @@ functions or even macros does not require reloading any tests.
   ;; Print parameters
   (:export :*print-summary*
            :*print-failures*
-           :*print-errors*)
+           :*print-errors*
+           :*summarize-results*)
   ;; Forms for assertions
   (:export :assert-eq
            :assert-eql
@@ -121,6 +122,9 @@ functions or even macros does not require reloading any tests.
 
 (defparameter *print-errors* nil
   "Print error messages if non-NIL.")
+
+(defparameter *summarize-results* t
+  "Summarize all of the unit test results.")
 
 (defparameter *use-debugger* nil
   "If not NIL, enter the debugger when an error is encountered in an
@@ -790,7 +794,8 @@ assertion.")
      finally
      (when *signal-results*
        (signal 'test-run-complete :results results))
-     (summarize-results results)
+     (when *summarize-results*
+       (summarize-results results))
      (return results))))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -807,7 +812,8 @@ assertion.")
      finally
      (when *signal-results*
        (signal 'test-run-complete :results results))
-     (summarize-results results)
+     (when *summarize-results*
+       (summarize-results results))
      (return results))))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
