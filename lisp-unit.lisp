@@ -91,6 +91,8 @@ functions or even macros does not require reloading any tests.
            :print-failures
            :print-errors
            :summarize-results)
+  ;; Functions for test results
+  (:export :reduce-test-results-dbs)
   ;; Functions for extensibility via signals
   (:export :signal-results
            :test-run-complete
@@ -768,6 +770,88 @@ assertion.")
     (format stream " | ~D execution errors~%" (exerr results))
     (format stream " | ~D missing tests~2%"
             (length (missing-tests results)))))
+
+(defun default-db-merge-function (results new-results)
+  "Signal an error by default if a merge is required."
+  (lambda (key value1 value2)
+    (error
+     "Cannot merge TEST-RESULTS-DB instances ~A and ~A as key ~A has
+two values, ~A and ~A"
+     results new-results key value1 value2)))
+
+(defun nappend-test-results-db (results new-results &key merge)
+  "Merge the results of NEW-RESULTS in to RESULTS. Any conflicts
+between RESULTS and NEW-RESULTS are handled by the function MERGE.
+
+The lambda list for the MERGE functions is
+
+  (key results-value new-results-value)
+
+where:
+  KEY is the key which appears in RESULTS and NEW-RESULTS.
+  RESULTS-VALUE is the value appearing RESULTS.
+  NEW-RESULTS-VALUE is the value appearing in NEW-RESULTS.
+
+If MERGE is NIL, then an error is signalled when a conflict occurs.
+"
+  (check-type results test-results-db)
+  (check-type new-results test-results-db)
+  (check-type merge (or null function))
+  (loop
+   with results-db = (database results)
+   with new-results-db = (database new-results)
+   with merge =
+   (or merge (default-db-merge-function results new-results))
+   ;; Merge test databases
+   for key being each hash-key in new-results-db
+   using (hash-value new-results-value)
+   do
+   (multiple-value-bind (results-value presentp)
+       (gethash key results-db)
+     (setf
+      (gethash key results-db)
+      (if presentp
+          (funcall merge key results-value new-results-value)
+          new-results-value)))
+   finally
+   ;; Update counters
+   (incf (pass results) (pass new-results))
+   (incf (fail results) (fail new-results))
+   (incf (exerr results) (exerr new-results))
+   ;; Merge failures, errors, and missing test details
+   (setf
+    ;; Failures
+    (failed-tests results)
+    (append (failed-tests results) (failed-tests new-results))
+    ;; Errors
+    (error-tests results)
+    (append (error-tests results) (error-tests new-results))
+    ;; Missing tests
+    (missing-tests results)
+    (append (missing-tests results) (missing-tests new-results))))
+   ;; Return the merged results
+   results)
+
+(defun reduce-test-results-dbs (all-results &key merge)
+  "Return a new instance of TEST-RESULTS-DB which contains all of the
+results in the sequence RESULTS. Any conflicts are handled by the
+function MERGE.
+
+The lambda list for the MERGE function is
+
+  (key value-1 value-2)
+
+where:
+  KEY is the key which appears at least twice in the sequence RESULTS.
+  VALUE-1 and VALUE-2 are the conflicting values for the given KEY.
+
+If MERGE is NIL, then an error is signalled when a conflict occurs."
+  (loop
+   with accumulated-test-results-db = (make-instance 'test-results-db)
+   for new-results in all-results do
+   (nappend-test-results-db
+    accumulated-test-results-db new-results :merge merge)
+   finally return accumulated-test-results-db))
 
 ;;; Run the tests
 
