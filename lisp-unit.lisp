@@ -851,7 +851,7 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
    for new-results in all-results do
    (nappend-test-results-db
     accumulated-test-results-db new-results :merge merge)
-   finally return accumulated-test-results-db))
+   finally (return accumulated-test-results-db)))
 
 ;;; Run the tests
 
