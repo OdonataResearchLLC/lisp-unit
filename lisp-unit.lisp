@@ -442,7 +442,8 @@ output if a test fails.
 
 (defmacro assert-false (form &rest extras)
   "Assert whether the form is false."
-  `(expand-assert :result ,form ,form nil ,extras))
+  (let ((extras `(,@(cdr form) ,@extras)))
+    `(expand-assert :result ,form ,form nil ,extras)))
 
 (defmacro assert-equality (test expected form &rest extras)
   "Assert whether expected and form are equal according to test."
@@ -455,7 +456,8 @@ output if a test fails.
 
 (defmacro assert-true (form &rest extras)
   "Assert whether the form is true."
-  `(expand-assert :result ,form ,form t ,extras))
+  (let ((extras `(,@(cdr form) ,@extras)))
+    `(expand-assert :result ,form ,form t ,extras)))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
   "Expand the assertion to the internal format."
