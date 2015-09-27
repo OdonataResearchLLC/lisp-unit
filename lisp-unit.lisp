@@ -440,11 +440,6 @@ output if a test fails.
                   (expand-macro-form ,form nil)
                   ',expansion ,extras))
 
-(defmacro assert-false (form &rest extras)
-  "Assert whether the form is false."
-  (let ((extras `(,@(cdr form) ,@extras)))
-    `(expand-assert :result ,form ,form nil ,extras)))
-
 (defmacro assert-equality (test expected form &rest extras)
   "Assert whether expected and form are equal according to test."
   `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
@@ -454,10 +449,30 @@ output if a test fails.
   `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
+(defmacro assert-false (form &rest extras)
+  "Assert whether the form is false."
+  `(expand-t-or-f nil ,form ,extras))
+
 (defmacro assert-true (form &rest extras)
   "Assert whether the form is true."
-  (let ((extras `(,@(cdr form) ,@extras)))
-    `(expand-assert :result ,form ,form t ,extras)))
+  `(expand-t-or-f t ,form ,extras))
+
+(defmacro expand-t-or-f (t-or-f form extras)
+  "Expand the true/false assertions to report the arguments."
+  (let ((args (gensym))
+	(fname (gensym)))
+    `(let ((,args (list ,@(cdr form)))
+	   (,fname ',(car form)))
+       (internal-assert
+        :result ',form
+        (lambda () (apply ,fname ,args)) ; Evaluate the form
+        (lambda () ,t-or-f)
+        ;; Concatenate the args with the extras
+        (lambda ()
+          (nconc
+           (mapcan #'list ',(cdr form) ,args)
+           (funcall (expand-extras ,extras))))
+        #'eql))))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
   "Expand the assertion to the internal format."
