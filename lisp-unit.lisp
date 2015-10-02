@@ -462,7 +462,7 @@ output if a test fails.
   (let ((args (gensym))
 	(fname (gensym)))
     `(let ((,args (list ,@(cdr form)))
-	   (,fname ',(car form)))
+	   (,fname #',(car form)))
        (internal-assert
         :result ',form
         (lambda () (apply ,fname ,args)) ; Evaluate the form
