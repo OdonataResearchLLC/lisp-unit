@@ -57,7 +57,8 @@ functions or even macros does not require reloading any tests.
   ;; Print parameters
   (:export :*print-summary*
            :*print-failures*
-           :*print-errors*)
+           :*print-errors*
+           :*summarize-results*)
   ;; Forms for assertions
   (:export :assert-eq
            :assert-eql
@@ -67,6 +68,7 @@ functions or even macros does not require reloading any tests.
            :assert-prints
            :assert-expands
            :assert-true
+	   :assert-test
            :assert-false
            :assert-error)
   ;; Functions for managing tests
@@ -90,6 +92,8 @@ functions or even macros does not require reloading any tests.
            :print-failures
            :print-errors
            :summarize-results)
+  ;; Functions for test results
+  (:export :reduce-test-results-dbs)
   ;; Functions for extensibility via signals
   (:export :signal-results
            :test-run-complete
@@ -121,6 +125,9 @@ functions or even macros does not require reloading any tests.
 
 (defparameter *print-errors* nil
   "Print error messages if non-NIL.")
+
+(defparameter *summarize-results* t
+  "Summarize all of the unit test results.")
 
 (defparameter *use-debugger* nil
   "If not NIL, enter the debugger when an error is encountered in an
@@ -381,6 +388,31 @@ assertion.")
 
 ;;; Assert macros
 
+(defmacro assert-test (form)
+  "This is a more lispy test assertion.  It logically tests for TRUE, but records a
+more meaningful failure than ASSERT-TRUE, by also recording (and consequently reporting)
+each of the arguments to the function call.  It is assumed that the function call being
+tested has LAMBDA semantics as opposed to macro semantics.  E.g., Here is some example
+output if a test fails.
+(ASSERT-TEST (IMAGE-EQUAL (IMAGE-LOAD IN) (IMAGE-LOAD OUT)))
+-->
+ | Failed Form: (IMAGE-EQUAL (IMAGE-LOAD IN) (IMAGE-LOAD OUT))
+ | Expected T but saw NIL
+ | (IMAGE-LOAD IN) => #<IMAGE-RAW of (BINARY)(16 32)>
+ | (IMAGE-LOAD OUT) => #<IMAGE-RAW of (BINARY)(16 32)>
+"
+  (let ((args (gensym))
+	(fname (gensym)))
+    `(let ((,args (list ,@(cdr form)))
+	   (,fname ',(car form)))
+       (internal-assert :result ; type
+			',form   ; form -- printable
+			(lambda () (apply ,fname ,args))   ; body -- evaluatable
+			(lambda () t)       ; expected results
+			(lambda () (mapcan #'list ',(cdr form) ,args))     ; extras
+			#'EQL
+		      ))))
+
 (defmacro assert-eq (expected form &rest extras)
   "Assert whether expected and form are EQ."
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'eq))
@@ -408,10 +440,6 @@ assertion.")
                   (expand-macro-form ,form nil)
                   ',expansion ,extras))
 
-(defmacro assert-false (form &rest extras)
-  "Assert whether the form is false."
-  `(expand-assert :result ,form ,form nil ,extras))
-
 (defmacro assert-equality (test expected form &rest extras)
   "Assert whether expected and form are equal according to test."
   `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
@@ -421,9 +449,30 @@ assertion.")
   `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
+(defmacro assert-false (form &rest extras)
+  "Assert whether the form is false."
+  `(expand-t-or-f nil ,form ,extras))
+
 (defmacro assert-true (form &rest extras)
   "Assert whether the form is true."
-  `(expand-assert :result ,form ,form t ,extras))
+  `(expand-t-or-f t ,form ,extras))
+
+(defmacro expand-t-or-f (t-or-f form extras)
+  "Expand the true/false assertions to report the arguments."
+  (let ((args (gensym))
+	(fname (gensym)))
+    `(let ((,args (list ,@(cdr form)))
+	   (,fname #',(car form)))
+       (internal-assert
+        :result ',form
+        (lambda () (apply ,fname ,args)) ; Evaluate the form
+        (lambda () ,t-or-f)
+        ;; Concatenate the args with the extras
+        (lambda ()
+          (nconc
+           (mapcan #'list ',(cdr form) ,args)
+           (funcall (expand-extras ,extras))))
+        #'eql))))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
   "Expand the assertion to the internal format."
@@ -765,6 +814,88 @@ assertion.")
     (format stream " | ~D missing tests~2%"
             (length (missing-tests results)))))
 
+(defun default-db-merge-function (results new-results)
+  "Signal an error by default if a merge is required."
+  (lambda (key value1 value2)
+    (error
+     "Cannot merge TEST-RESULTS-DB instances ~A and ~A as key ~A has
+two values, ~A and ~A"
+     results new-results key value1 value2)))
+
+(defun nappend-test-results-db (results new-results &key merge)
+  "Merge the results of NEW-RESULTS in to RESULTS. Any conflicts
+between RESULTS and NEW-RESULTS are handled by the function MERGE.
+
+The lambda list for the MERGE functions is
+
+  (key results-value new-results-value)
+
+where:
+  KEY is the key which appears in RESULTS and NEW-RESULTS.
+  RESULTS-VALUE is the value appearing RESULTS.
+  NEW-RESULTS-VALUE is the value appearing in NEW-RESULTS.
+
+If MERGE is NIL, then an error is signalled when a conflict occurs.
+"
+  (check-type results test-results-db)
+  (check-type new-results test-results-db)
+  (check-type merge (or null function))
+  (loop
+   with results-db = (database results)
+   with new-results-db = (database new-results)
+   with merge =
+   (or merge (default-db-merge-function results new-results))
+   ;; Merge test databases
+   for key being each hash-key in new-results-db
+   using (hash-value new-results-value)
+   do
+   (multiple-value-bind (results-value presentp)
+       (gethash key results-db)
+     (setf
+      (gethash key results-db)
+      (if presentp
+          (funcall merge key results-value new-results-value)
+          new-results-value)))
+   finally
+   ;; Update counters
+   (incf (pass results) (pass new-results))
+   (incf (fail results) (fail new-results))
+   (incf (exerr results) (exerr new-results))
+   ;; Merge failures, errors, and missing test details
+   (setf
+    ;; Failures
+    (failed-tests results)
+    (append (failed-tests results) (failed-tests new-results))
+    ;; Errors
+    (error-tests results)
+    (append (error-tests results) (error-tests new-results))
+    ;; Missing tests
+    (missing-tests results)
+    (append (missing-tests results) (missing-tests new-results))))
+   ;; Return the merged results
+   results)
+
+(defun reduce-test-results-dbs (all-results &key merge)
+  "Return a new instance of TEST-RESULTS-DB which contains all of the
+results in the sequence RESULTS. Any conflicts are handled by the
+function MERGE.
+
+The lambda list for the MERGE function is
+
+  (key value-1 value-2)
+
+where:
+  KEY is the key which appears at least twice in the sequence RESULTS.
+  VALUE-1 and VALUE-2 are the conflicting values for the given KEY.
+
+If MERGE is NIL, then an error is signalled when a conflict occurs."
+  (loop
+   with accumulated-test-results-db = (make-instance 'test-results-db)
+   for new-results in all-results do
+   (nappend-test-results-db
+    accumulated-test-results-db new-results :merge merge)
+   finally (return accumulated-test-results-db)))
+
 ;;; Run the tests
 
 (define-condition test-run-complete ()
@@ -790,7 +921,8 @@ assertion.")
      finally
      (when *signal-results*
        (signal 'test-run-complete :results results))
-     (summarize-results results)
+     (when *summarize-results*
+       (summarize-results results))
      (return results))))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -807,7 +939,8 @@ assertion.")
      finally
      (when *signal-results*
        (signal 'test-run-complete :results results))
-     (summarize-results results)
+     (when *summarize-results*
+       (summarize-results results))
      (return results))))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
