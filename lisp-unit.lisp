@@ -424,6 +424,12 @@ assertion.")
   `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
+(defmacro assert-nil (form &rest extras)
+  "Assert whether the form is false."
+  (if (atom form)
+      `(expand-assert :result ,form ,form nil ,extras)
+      `(expand-t-or-f nil ,form ,extras)))
+
 (defmacro assert-false (form &rest extras)
   "Assert whether the form is false."
   (if (atom form)
