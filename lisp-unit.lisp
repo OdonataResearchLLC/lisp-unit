@@ -227,6 +227,9 @@ assertion.")
     :type string
     :initarg :doc
     :reader doc)
+   (thunk
+    :type (function () t)
+    :initarg :thunk)
    (code
     :type list
     :initarg :code
@@ -287,7 +290,7 @@ assertion.")
          (setf
           ;; Unit test
           (gethash ,qname (package-table package t))
-          (make-instance 'unit-test :doc doc :code ',code))
+          (make-instance 'unit-test :doc doc :code ',code :thunk (lambda () ,@body)))
          ;; Tags
          (loop
           for tag in ',tag do
