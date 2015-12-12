@@ -440,7 +440,7 @@ assertion.")
   "Expand the true/false assertions to report the arguments."
   (let ((fname (gensym))
         (args (gensym)))
-    `(let ((,fname ',(car form))
+    `(let ((,fname #',(car form))
            (,args (list ,@(cdr form))))
        (internal-assert
         :result ',form
