@@ -388,31 +388,6 @@ assertion.")
 
 ;;; Assert macros
 
-(defmacro assert-test (form)
-  "This is a more lispy test assertion.  It logically tests for TRUE, but records a
-more meaningful failure than ASSERT-TRUE, by also recording (and consequently reporting)
-each of the arguments to the function call.  It is assumed that the function call being
-tested has LAMBDA semantics as opposed to macro semantics.  E.g., Here is some example
-output if a test fails.
-(ASSERT-TEST (IMAGE-EQUAL (IMAGE-LOAD IN) (IMAGE-LOAD OUT)))
--->
- | Failed Form: (IMAGE-EQUAL (IMAGE-LOAD IN) (IMAGE-LOAD OUT))
- | Expected T but saw NIL
- | (IMAGE-LOAD IN) => #<IMAGE-RAW of (BINARY)(16 32)>
- | (IMAGE-LOAD OUT) => #<IMAGE-RAW of (BINARY)(16 32)>
-"
-  (let ((args (gensym))
-	(fname (gensym)))
-    `(let ((,args (list ,@(cdr form)))
-	   (,fname ',(car form)))
-       (internal-assert :result ; type
-			',form   ; form -- printable
-			(lambda () (apply ,fname ,args))   ; body -- evaluatable
-			(lambda () t)       ; expected results
-			(lambda () (mapcan #'list ',(cdr form) ,args))     ; extras
-			#'EQL
-		      ))))
-
 (defmacro assert-eq (expected form &rest extras)
   "Assert whether expected and form are EQ."
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'eq))
