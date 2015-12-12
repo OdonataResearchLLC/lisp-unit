@@ -68,6 +68,7 @@ functions or even macros does not require reloading any tests.
            :assert-prints
            :assert-expands
            :assert-true
+	   :assert-test
            :assert-false
            :assert-error)
   ;; Functions for managing tests
@@ -414,10 +415,6 @@ assertion.")
                   (expand-macro-form ,form nil)
                   ',expansion ,extras))
 
-(defmacro assert-false (form &rest extras)
-  "Assert whether the form is false."
-  `(expand-assert :result ,form ,form nil ,extras))
-
 (defmacro assert-equality (test expected form &rest extras)
   "Assert whether expected and form are equal according to test."
   `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
@@ -427,9 +424,34 @@ assertion.")
   `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
+(defmacro assert-false (form &rest extras)
+  "Assert whether the form is false."
+  (if (atom form)
+      `(expand-assert :result ,form ,form nil ,extras)
+      `(expand-t-or-f nil ,form ,extras)))
+
 (defmacro assert-true (form &rest extras)
   "Assert whether the form is true."
-  `(expand-assert :result ,form ,form t ,extras))
+  (if (atom form)
+      `(expand-assert :result ,form ,form t ,extras)
+      `(expand-t-or-f t ,form ,extras)))
+
+(defmacro expand-t-or-f (t-or-f form extras)
+  "Expand the true/false assertions to report the arguments."
+  (let ((fname (gensym))
+        (args (gensym)))
+    `(let ((,fname #',(car form))
+           (,args (list ,@(cdr form))))
+       (internal-assert
+        :result ',form
+        (lambda () (apply ,fname ,args)) ; Evaluate the form
+        (lambda () ,t-or-f)
+        ;; Concatenate the args with the extras
+        (lambda ()
+          (nconc
+           (mapcan #'list ',(cdr form) ,args)
+           (funcall (expand-extras ,extras))))
+        #'eql))))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
   "Expand the assertion to the internal format."
