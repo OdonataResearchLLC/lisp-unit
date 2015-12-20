@@ -227,9 +227,6 @@ assertion.")
     :type string
     :initarg :doc
     :reader doc)
-   (thunk
-    :type (function () t)
-    :initarg :thunk)
    (code
     :type list
     :initarg :code
@@ -287,12 +284,11 @@ assertion.")
       `(let* ((,qname (valid-test-name ',name))
               (doc (or ,doc (symbol-name ,qname)))
               (package (test-package ,qname)))
+         (lambda () ,@code)
          (setf
           ;; Unit test
           (gethash ,qname (package-table package t))
-          (make-instance
-           'unit-test :doc doc :code ',code
-           :thunk (lambda () ,@code)))
+          (make-instance 'unit-test :doc doc :code ',code))
          ;; Tags
          (loop
           for tag in ',tag do
