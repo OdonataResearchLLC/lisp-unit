@@ -910,53 +910,57 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
   (:documentation
    "Signaled when a test run is finished."))
 
-(defun %run-all-thunks (&optional (package *package*))
-  "Run all of the test thunks in the package."
-  (with-package-table (table package)
-    (loop
-     with results = (make-instance 'test-results-db)
-     for test-name being each hash-key in table
-     using (hash-value unit-test)
-     if unit-test do
-     (record-result test-name (code unit-test) results)
-     else do
-     (push test-name (missing-tests results))
-     ;; Summarize and return the test results
-     finally
-     (when *signal-results*
-       (signal 'test-run-complete :results results))
-     (when *summarize-results*
-       (summarize-results results))
-     (return results))))
+(defun %run-all-thunks (&optional (packages (list *package*)))
+  "Run all of the test thunks in the package(s)."
+  (when (and packages (atom packages))
+    (setf packages (list packages)))
+  (let ((results (make-instance 'test-results-db)))
+    (dolist (package packages)
+      (with-package-table (table package)
+	(loop
+	  for test-name being each hash-key in table
+	    using (hash-value unit-test)
+	  if unit-test do
+	    (record-result test-name (code unit-test) results)
+	  else do
+	    (push test-name (missing-tests results)))))
+    ;; Summarize and return the test results
+    (when *signal-results*
+      (signal 'test-run-complete :results results))
+    (when *summarize-results*
+      (summarize-results results))
+    results))
 
-(defun %run-thunks (test-names &optional (package *package*))
-  "Run the list of test thunks in the package."
-  (with-package-table (table package)
-    (loop
-     with results = (make-instance 'test-results-db)
-     for test-name in test-names
-     as unit-test = (gethash test-name table)
-     if unit-test do
-     (record-result test-name (code unit-test) results)
-     else do
-     (push test-name (missing-tests results))
-     finally
-     (when *signal-results*
-       (signal 'test-run-complete :results results))
-     (when *summarize-results*
-       (summarize-results results))
-     (return results))))
+(defun %run-thunks (test-names &optional (packages (list *package*)))
+  "Run the list of test thunks in the package(s)."
+  (when (and packages (atom packages))
+    (setf packages (list packages)))
+  (let ((results (make-instance 'test-results-db)))
+    (dolist (package packages)
+      (with-package-table (table package)
+	(loop
+	  for test-name in test-names
+	  as unit-test = (gethash test-name table)
+	  if unit-test do
+	    (record-result test-name (code unit-test) results)
+	  else do
+	    (push test-name (missing-tests results)))))
+    (when *signal-results*
+      (signal 'test-run-complete :results results))
+    (when *summarize-results*
+      (summarize-results results))
+    results))
 
 (defun run-1-test (test-name)
   "Run the test designated by the given TEST-NAME"
   (run-tests (list test-name) (symbol-package test-name)))
 
-(defun run-tests (&optional (test-names :all) (package *package*))
+(defun run-tests (&optional (test-names :all) (packages (list *package*)))
   "Run the specified tests in package."
   (reset-counters)
   (if (eq :all test-names)
-      (%run-all-thunks package)
-      (%run-thunks test-names package)))
+      (%run-all-thunks packages)
+      (%run-thunks test-names packages)))
 
 (defun run-tags (&optional (tags :all) (package *package*))
   "Run the tests associated with the specified tags in package."
