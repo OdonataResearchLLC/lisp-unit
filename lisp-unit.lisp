@@ -71,6 +71,7 @@
            :assert-true
 	   :assert-test
            :assert-false
+           :assert-nil
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
