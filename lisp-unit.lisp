@@ -1,50 +1,51 @@
 ;;;-*- Mode: Lisp; Syntax: ANSI-Common-Lisp -*-
 
 #|
-Copyright (c) 2004-2005 Christopher K. Riesbeck
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
+  Copyright (c) 2004-2005, Christopher K. Riesbeck
+  Copyright (c) 2009-2016, Thomas M. Hermann
 
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+  The above copyright notice and this permission notice shall be included
+  in all copies or substantial portions of the Software.
 
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.
 
-How to use
-----------
+  How to use
+  ----------
 
-1. Read the documentation at:
-   https://github.com/OdonataResearchLLC/lisp-unit/wiki
+  1. Read the documentation at:
+     https://github.com/OdonataResearchLLC/lisp-unit/wiki
 
-2. Make a file of DEFINE-TEST's. See exercise-tests.lisp for many
-examples. If you want, start your test file with (REMOVE-TESTS :ALL)
-to clear any previously defined tests.
+  2. Make a file of DEFINE-TEST's. See exercise-tests.lisp for many
+  examples. If you want, start your test file with (REMOVE-TESTS :ALL)
+  to clear any previously defined tests.
 
-3. Load this file.
+  3. Load this file.
 
-4. (use-package :lisp-unit)
+  4. (use-package :lisp-unit)
 
-5. Load your code file and your file of tests.
+  5. Load your code file and your file of tests.
 
-6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
-simply (RUN-TESTS :ALL) to run all defined tests.
+  6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
+  simply (RUN-TESTS :ALL) to run all defined tests.
 
-A summary of how many tests passed and failed will be printed.
+  A summary of how many tests passed and failed will be printed.
 
-NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
-functions or even macros does not require reloading any tests.
+  NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
+  functions or even macros does not require reloading any tests.
 
 |#
 
