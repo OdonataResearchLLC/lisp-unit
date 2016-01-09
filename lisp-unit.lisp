@@ -1037,5 +1037,3 @@ vice versa."
    (listp list2)
    (apply #'subsetp list1 list2 initargs)
    (apply #'subsetp list2 list1 initargs)))
-
-(pushnew :lisp-unit common-lisp:*features*)

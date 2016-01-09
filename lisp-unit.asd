@@ -36,3 +36,8 @@
     :components ((:file "rational")
                  (:file "floating-point")
                  (:file "test-anything-protocol")))))
+
+(defmethod perform :after
+  ((operation load-op) (system (eql (find-system :lisp-unit))))
+  "Update *FEATURES* if the system loads successfully."
+  (pushnew :lisp-unit common-lisp:*features*))
