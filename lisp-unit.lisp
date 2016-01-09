@@ -1,50 +1,51 @@
 ;;;-*- Mode: Lisp; Syntax: ANSI-Common-Lisp -*-
 
 #|
-Copyright (c) 2004-2005 Christopher K. Riesbeck
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
+  Copyright (c) 2004-2005, Christopher K. Riesbeck
+  Copyright (c) 2009-2016, Thomas M. Hermann
 
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+  The above copyright notice and this permission notice shall be included
+  in all copies or substantial portions of the Software.
 
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.
 
-How to use
-----------
+  How to use
+  ----------
 
-1. Read the documentation at:
-   https://github.com/OdonataResearchLLC/lisp-unit/wiki
+  1. Read the documentation at:
+     https://github.com/OdonataResearchLLC/lisp-unit/wiki
 
-2. Make a file of DEFINE-TEST's. See exercise-tests.lisp for many
-examples. If you want, start your test file with (REMOVE-TESTS :ALL)
-to clear any previously defined tests.
+  2. Make a file of DEFINE-TEST's. See exercise-tests.lisp for many
+  examples. If you want, start your test file with (REMOVE-TESTS :ALL)
+  to clear any previously defined tests.
 
-3. Load this file.
+  3. Load this file.
 
-4. (use-package :lisp-unit)
+  4. (use-package :lisp-unit)
 
-5. Load your code file and your file of tests.
+  5. Load your code file and your file of tests.
 
-6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
-simply (RUN-TESTS :ALL) to run all defined tests.
+  6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
+  simply (RUN-TESTS :ALL) to run all defined tests.
 
-A summary of how many tests passed and failed will be printed.
+  A summary of how many tests passed and failed will be printed.
 
-NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
-functions or even macros does not require reloading any tests.
+  NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
+  functions or even macros does not require reloading any tests.
 
 |#
 
@@ -57,7 +58,8 @@ functions or even macros does not require reloading any tests.
   ;; Print parameters
   (:export :*print-summary*
            :*print-failures*
-           :*print-errors*)
+           :*print-errors*
+           :*summarize-results*)
   ;; Forms for assertions
   (:export :assert-eq
            :assert-eql
@@ -67,7 +69,9 @@ functions or even macros does not require reloading any tests.
            :assert-prints
            :assert-expands
            :assert-true
+	   :assert-test
            :assert-false
+           :assert-nil
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
@@ -90,6 +94,8 @@ functions or even macros does not require reloading any tests.
            :print-failures
            :print-errors
            :summarize-results)
+  ;; Functions for test results
+  (:export :reduce-test-results-dbs)
   ;; Functions for extensibility via signals
   (:export :signal-results
            :test-run-complete
@@ -121,6 +127,9 @@ functions or even macros does not require reloading any tests.
 
 (defparameter *print-errors* nil
   "Print error messages if non-NIL.")
+
+(defparameter *summarize-results* t
+  "Summarize all of the unit test results.")
 
 (defparameter *use-debugger* nil
   "If not NIL, enter the debugger when an error is encountered in an
@@ -408,10 +417,6 @@ assertion.")
                   (expand-macro-form ,form nil)
                   ',expansion ,extras))
 
-(defmacro assert-false (form &rest extras)
-  "Assert whether the form is false."
-  `(expand-assert :result ,form ,form nil ,extras))
-
 (defmacro assert-equality (test expected form &rest extras)
   "Assert whether expected and form are equal according to test."
   `(expand-assert :equal ,form ,form ,expected ,extras :test ,test))
@@ -421,9 +426,40 @@ assertion.")
   `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
+(defmacro assert-nil (form &rest extras)
+  "Assert whether the form is false."
+  (if (atom form)
+      `(expand-assert :result ,form ,form nil ,extras)
+      `(expand-t-or-f nil ,form ,extras)))
+
+(defmacro assert-false (form &rest extras)
+  "Assert whether the form is false."
+  (if (atom form)
+      `(expand-assert :result ,form ,form nil ,extras)
+      `(expand-t-or-f nil ,form ,extras)))
+
 (defmacro assert-true (form &rest extras)
   "Assert whether the form is true."
-  `(expand-assert :result ,form ,form t ,extras))
+  (if (atom form)
+      `(expand-assert :result ,form ,form t ,extras)
+      `(expand-t-or-f t ,form ,extras)))
+
+(defmacro expand-t-or-f (t-or-f form extras)
+  "Expand the true/false assertions to report the arguments."
+  (let ((fname (gensym))
+        (args (gensym)))
+    `(let ((,fname #',(car form))
+           (,args (list ,@(cdr form))))
+       (internal-assert
+        :result ',form
+        (lambda () (apply ,fname ,args)) ; Evaluate the form
+        (lambda () ,t-or-f)
+        ;; Concatenate the args with the extras
+        (lambda ()
+          (nconc
+           (mapcan #'list ',(cdr form) ,args)
+           (funcall (expand-extras ,extras))))
+        #'eql))))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
   "Expand the assertion to the internal format."
@@ -765,6 +801,88 @@ assertion.")
     (format stream " | ~D missing tests~2%"
             (length (missing-tests results)))))
 
+(defun default-db-merge-function (results new-results)
+  "Signal an error by default if a merge is required."
+  (lambda (key value1 value2)
+    (error
+     "Cannot merge TEST-RESULTS-DB instances ~A and ~A as key ~A has
+two values, ~A and ~A"
+     results new-results key value1 value2)))
+
+(defun nappend-test-results-db (results new-results &key merge)
+  "Merge the results of NEW-RESULTS in to RESULTS. Any conflicts
+between RESULTS and NEW-RESULTS are handled by the function MERGE.
+
+The lambda list for the MERGE functions is
+
+  (key results-value new-results-value)
+
+where:
+  KEY is the key which appears in RESULTS and NEW-RESULTS.
+  RESULTS-VALUE is the value appearing RESULTS.
+  NEW-RESULTS-VALUE is the value appearing in NEW-RESULTS.
+
+If MERGE is NIL, then an error is signalled when a conflict occurs.
+"
+  (check-type results test-results-db)
+  (check-type new-results test-results-db)
+  (check-type merge (or null function))
+  (loop
+   with results-db = (database results)
+   with new-results-db = (database new-results)
+   with merge =
+   (or merge (default-db-merge-function results new-results))
+   ;; Merge test databases
+   for key being each hash-key in new-results-db
+   using (hash-value new-results-value)
+   do
+   (multiple-value-bind (results-value presentp)
+       (gethash key results-db)
+     (setf
+      (gethash key results-db)
+      (if presentp
+          (funcall merge key results-value new-results-value)
+          new-results-value)))
+   finally
+   ;; Update counters
+   (incf (pass results) (pass new-results))
+   (incf (fail results) (fail new-results))
+   (incf (exerr results) (exerr new-results))
+   ;; Merge failures, errors, and missing test details
+   (setf
+    ;; Failures
+    (failed-tests results)
+    (append (failed-tests results) (failed-tests new-results))
+    ;; Errors
+    (error-tests results)
+    (append (error-tests results) (error-tests new-results))
+    ;; Missing tests
+    (missing-tests results)
+    (append (missing-tests results) (missing-tests new-results))))
+   ;; Return the merged results
+   results)
+
+(defun reduce-test-results-dbs (all-results &key merge)
+  "Return a new instance of TEST-RESULTS-DB which contains all of the
+results in the sequence RESULTS. Any conflicts are handled by the
+function MERGE.
+
+The lambda list for the MERGE function is
+
+  (key value-1 value-2)
+
+where:
+  KEY is the key which appears at least twice in the sequence RESULTS.
+  VALUE-1 and VALUE-2 are the conflicting values for the given KEY.
+
+If MERGE is NIL, then an error is signalled when a conflict occurs."
+  (loop
+   with accumulated-test-results-db = (make-instance 'test-results-db)
+   for new-results in all-results do
+   (nappend-test-results-db
+    accumulated-test-results-db new-results :merge merge)
+   finally (return accumulated-test-results-db)))
+
 ;;; Run the tests
 
 (define-condition test-run-complete ()
@@ -790,7 +908,8 @@ assertion.")
      finally
      (when *signal-results*
        (signal 'test-run-complete :results results))
-     (summarize-results results)
+     (when *summarize-results*
+       (summarize-results results))
      (return results))))
 
 (defun %run-thunks (test-names &optional (package *package*))
@@ -807,7 +926,8 @@ assertion.")
      finally
      (when *signal-results*
        (signal 'test-run-complete :results results))
-     (summarize-results results)
+     (when *summarize-results*
+       (summarize-results results))
      (return results))))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
@@ -917,5 +1037,3 @@ vice versa."
    (listp list2)
    (apply #'subsetp list1 list2 initargs)
    (apply #'subsetp list2 list1 initargs)))
-
-(pushnew :lisp-unit common-lisp:*features*)
