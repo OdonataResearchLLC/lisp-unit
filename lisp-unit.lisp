@@ -80,8 +80,7 @@
            :test-documentation
            :remove-tests
            :run-tests
-           :use-debugger
-           :check-code)
+           :use-debugger)
   ;; Functions for managing tags
   (:export :list-tags
            :tagged-tests
@@ -153,13 +152,6 @@ assertion.")
 (defun signal-results (&optional (flag t))
   "Signal the results for extensibility."
   (setq *signal-results* flag))
-
-(defparameter *check-code* nil
-  "Check the code when the test is defined if not NIL.")
-
-(defun check-code (&optional (flag t))
-  "Check the code when the test is defined."
-  (setq *check-code* flag))
 
 ;;; Global unit test database
 
@@ -294,7 +286,6 @@ assertion.")
       `(let* ((,qname (valid-test-name ',name))
               (doc (or ,doc (symbol-name ,qname)))
               (package (test-package ,qname)))
-         ,(when *check-code* `(lambda () ,@code))
          (setf
           ;; Unit test
           (gethash ,qname (package-table package t))
