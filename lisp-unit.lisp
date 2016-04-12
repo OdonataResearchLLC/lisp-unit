@@ -921,7 +921,11 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
 	  for test-name being each hash-key in table
 	    using (hash-value unit-test)
 	  if unit-test do
-	    (record-result test-name (code unit-test) results)
+	    (let ((start-time (get-internal-real-time)))
+	      (prog2 (format t "~A ~A~%" package test-name)
+		  (record-result test-name (code unit-test) results)
+		(format t "~A ~A ~F seconds~%~%" package test-name (/ (- (get-internal-real-time) start-time)
+								    internal-time-units-per-second))))
 	  else do
 	    (push test-name (missing-tests results)))))
     ;; Summarize and return the test results
@@ -979,7 +983,7 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
   (format stream "~& | Failed Form: ~S" (form result))
   (call-next-method)
   (when (extras result)
-    (format stream "~{~& | ~S => ~S~}~%" (extras result)))
+    (format stream "~{~& | ~S ~%   => ~S~}~%" (extras result)))
   (format stream "~& |~%"))
 
 (defmethod print-failures ((result failure-result) &optional
