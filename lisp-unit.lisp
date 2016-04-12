@@ -291,7 +291,7 @@ assertion.")
          (setf
           ;; Unit test
           (gethash ,qname (package-table package t))
-          (make-instance 'unit-test :doc doc :code ',code :thunk (lambda () ,@body)))
+          (make-instance 'unit-test :doc doc :code ',code :thunk (lambda () ,@code)))
          ;; Tags
          (loop
           for tag in ',tag do
