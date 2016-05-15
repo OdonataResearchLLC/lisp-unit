@@ -52,6 +52,28 @@
   (dotimes (i 5)
     (assert-equal i (my-sqrt (* i i)) i)))
 
+;;; Expand true or false
+
+(defun my-less-than-function (arg1 arg2)
+  (< arg1 arg2))
+
+(define-test expand-t-or-f-function
+  (let ((val 0))
+    (assert-true (my-less-than-function (incf val) (incf val)))
+    (assert-eql 2 val)
+    (assert-true (my-less-than-function (incf val) (decf val)))
+    (assert-eql 2 val)))
+
+(defmacro my-less-than-macro (arg1 arg2)
+  `(< ,arg1 ,arg2))
+
+(define-test expand-t-or-f-macro
+  (let ((val 0))
+    (assert-true (my-less-than-macro (incf val) (incf val)))
+    (assert-eql 2 val)
+    (assert-true (my-less-than-macro (incf val) (decf val)))
+    (assert-eql 2 val)))
+
 ;;; Macro
 
 (defmacro my-macro (arg1 arg2)
