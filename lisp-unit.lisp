@@ -69,7 +69,7 @@
            :assert-prints
            :assert-expands
            :assert-true
-	   :assert-test
+           :assert-test
            :assert-false
            :assert-nil
            :assert-error)
