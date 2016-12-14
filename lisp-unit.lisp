@@ -69,7 +69,7 @@
            :assert-prints
            :assert-expands
            :assert-true
-	   :assert-test
+           :assert-test
            :assert-false
            :assert-nil
            :assert-error)
@@ -448,18 +448,33 @@ assertion.")
   "Expand the true/false assertions to report the arguments."
   (let ((fname (gensym))
         (args (gensym)))
-    `(let ((,fname #',(car form))
+    `(let ((,fname ',(car form))
            (,args (list ,@(cdr form))))
-       (internal-assert
-        :result ',form
-        (lambda () (apply ,fname ,args)) ; Evaluate the form
-        (lambda () ,t-or-f)
-        ;; Concatenate the args with the extras
-        (lambda ()
-          (nconc
-           (mapcan #'list ',(cdr form) ,args)
-           (funcall (expand-extras ,extras))))
-        #'eql))))
+       (if (macro-function ,fname)
+           ;; Do not report macro arguments
+           (internal-assert
+            :result ',form
+            (lambda () ,form)
+            (lambda () ,t-or-f)
+            ;; Concatenate the args with the extras
+            ;; FIXME: Need to test whether the args are expanded at
+            ;;        the right time
+            (lambda ()
+              (nconc
+               (mapcan #'list ',(cdr form) ,args)
+               (funcall (expand-extras ,extras))))
+            #'eql)
+           ;; Report function arguments
+           (internal-assert
+            :result ',form
+            (lambda () (apply ,fname ,args)) ; Evaluate the form
+            (lambda () ,t-or-f)
+            ;; Concatenate the args with the extras
+            (lambda ()
+              (nconc
+               (mapcan #'list ',(cdr form) ,args)
+               (funcall (expand-extras ,extras))))
+            #'eql)))))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
   "Expand the assertion to the internal format."
