@@ -72,7 +72,8 @@
     (assert-true (my-less-than-macro (incf val) (incf val)))
     (assert-eql 2 val)
     (assert-true (my-less-than-macro (incf val) (decf val)))
-    (assert-eql 2 val)))
+    (assert-eql 2 val))
+  (assert-true (and nil (/ 1 0))))
 
 ;;; Macro
 
