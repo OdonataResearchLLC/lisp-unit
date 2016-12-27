@@ -14,9 +14,9 @@ have been inspired by [JUnit for Java][JUnit].
 * Loadable as a single file
 * Loadable with [ASDF][] or [Quicklisp][]
 * Simple to define and run tests
-* Redfine functions and macros without reloading tests
+* Redefine functions and macros without reloading tests
 * Test return values, printed output, macro expansions, and conditions
-* Fined grained control over the testing output
+* Fine-grained control over the testing output
 * Store all test results in a database object that can be examined
 * Group tests by package for modularity
 * Group tests using tags
