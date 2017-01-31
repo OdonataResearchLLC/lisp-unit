@@ -772,7 +772,7 @@ assertion.")
         (fail (fail object))
         (exerr (exerr object)))
     (format
-     stream "#<~A Total(~D) Passed(~D) Failed(~D) Errors(~D)>~%"
+     stream "#<~A Total(~D) Passed(~D) Failed(~D) Errors(~D)>"
      (class-name (class-of object))
      (+ pass fail) pass fail exerr)))
 
