@@ -283,6 +283,7 @@ assertion.")
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
+  (format t "defining test ~A~%" name)
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
       `(let* ((,qname (valid-test-name ',name))
@@ -785,6 +786,7 @@ output if a test fails.
 
 (defun record-result (test-name code results)
   "Run the test code and record the result."
+  (format t "Beginning test ~A~%" test-name)
   (let ((result (run-test-thunk test-name code)))
     ;; Store the result
     (setf (gethash test-name (database results)) result)
@@ -922,7 +924,7 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
 	    using (hash-value unit-test)
 	  if unit-test do
 	    (let ((start-time (get-internal-real-time)))
-	      (prog2 (format t "~A ~A~%" package test-name)
+	      (prog2 (let ((*package* (find-package "KEYWORD"))) (format t "~A ~S~%" package test-name))
 		  (record-result test-name (code unit-test) results)
 		(format t "~A ~A ~F seconds~%~%" package test-name (/ (- (get-internal-real-time) start-time)
 								    internal-time-units-per-second))))
