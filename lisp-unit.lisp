@@ -101,7 +101,7 @@
            :test-run-complete
            :results)
   ;; Utility predicates
-  (:export :logically-equal :set-equal))
+  (:export :logically-equal :set-equal :unordered-equal))
 
 (in-package :lisp-unit)
 
