@@ -812,6 +812,12 @@ output if a test fails.
   "Print a summary of all results to the stream."
   (let ((pass (pass results))
         (fail (fail results)))
+    (maphash (lambda (test-name result)
+               (when (fail result)
+                 (format stream " |    failed: ~A~%" test-name))) (database results))
+    (maphash (lambda (test-name result)
+               (when (exerr result)
+                 (format stream " |    error: ~A~%" test-name))) (database results)) 
     (format stream "~&Unit Test Summary~%")
     (format stream " | ~D assertions total~%" (+ pass fail))
     (format stream " | ~D passed~%" pass)
