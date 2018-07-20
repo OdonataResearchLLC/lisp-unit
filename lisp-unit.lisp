@@ -1,50 +1,51 @@
 ;;;-*- Mode: Lisp; Syntax: ANSI-Common-Lisp -*-
 
 #|
-Copyright (c) 2004-2005 Christopher K. Riesbeck
 
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the "Software"),
-to deal in the Software without restriction, including without limitation
-the rights to use, copy, modify, merge, publish, distribute, sublicense,
-and/or sell copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following conditions:
+  Copyright (c) 2004-2005, Christopher K. Riesbeck
+  Copyright (c) 2009-2016, Thomas M. Hermann
 
-The above copyright notice and this permission notice shall be included
-in all copies or substantial portions of the Software.
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following conditions:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+  The above copyright notice and this permission notice shall be included
+  in all copies or substantial portions of the Software.
 
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+  OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+  ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.
 
-How to use
-----------
+  How to use
+  ----------
 
-1. Read the documentation at:
-   https://github.com/OdonataResearchLLC/lisp-unit/wiki
+  1. Read the documentation at:
+     https://github.com/OdonataResearchLLC/lisp-unit/wiki
 
-2. Make a file of DEFINE-TEST's. See exercise-tests.lisp for many
-examples. If you want, start your test file with (REMOVE-TESTS :ALL)
-to clear any previously defined tests.
+  2. Make a file of DEFINE-TEST's. See exercise-tests.lisp for many
+  examples. If you want, start your test file with (REMOVE-TESTS :ALL)
+  to clear any previously defined tests.
 
-3. Load this file.
+  3. Load this file.
 
-4. (use-package :lisp-unit)
+  4. (use-package :lisp-unit)
 
-5. Load your code file and your file of tests.
+  5. Load your code file and your file of tests.
 
-6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
-simply (RUN-TESTS :ALL) to run all defined tests.
+  6. Test your code with (RUN-TESTS '(test-name1 test-name2 ...)) or
+  simply (RUN-TESTS :ALL) to run all defined tests.
 
-A summary of how many tests passed and failed will be printed.
+  A summary of how many tests passed and failed will be printed.
 
-NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
-functions or even macros does not require reloading any tests.
+  NOTE: Nothing is compiled until RUN-TESTS is expanded. Redefining
+  functions or even macros does not require reloading any tests.
 
 |#
 
@@ -68,8 +69,9 @@ functions or even macros does not require reloading any tests.
            :assert-prints
            :assert-expands
            :assert-true
-	   :assert-test
+           :assert-test
            :assert-false
+           :assert-nil
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
@@ -228,9 +230,6 @@ assertion.")
     :type string
     :initarg :doc
     :reader doc)
-   (thunk
-    :type (function () t)
-    :initarg :thunk)
    (code
     :type list
     :initarg :code
@@ -292,7 +291,7 @@ assertion.")
          (setf
           ;; Unit test
           (gethash ,qname (package-table package t))
-          (make-instance 'unit-test :doc doc :code ',code :thunk (lambda () ,@code)))
+          (make-instance 'unit-test :doc doc :code ',code))
          ;; Tags
          (loop
           for tag in ',tag do
@@ -393,31 +392,6 @@ assertion.")
 
 ;;; Assert macros
 
-(defmacro assert-test (form)
-  "This is a more lispy test assertion.  It logically tests for TRUE, but records a
-more meaningful failure than ASSERT-TRUE, by also recording (and consequently reporting)
-each of the arguments to the function call.  It is assumed that the function call being
-tested has LAMBDA semantics as opposed to macro semantics.  E.g., Here is some example
-output if a test fails.
-(ASSERT-TEST (IMAGE-EQUAL (IMAGE-LOAD IN) (IMAGE-LOAD OUT)))
--->
- | Failed Form: (IMAGE-EQUAL (IMAGE-LOAD IN) (IMAGE-LOAD OUT))
- | Expected T but saw NIL
- | (IMAGE-LOAD IN) => #<IMAGE-RAW of (BINARY)(16 32)>
- | (IMAGE-LOAD OUT) => #<IMAGE-RAW of (BINARY)(16 32)>
-"
-  (let ((args (gensym))
-	(fname (gensym)))
-    `(let ((,args (list ,@(cdr form)))
-	   (,fname ',(car form)))
-       (internal-assert :result ; type
-			',form   ; form -- printable
-			(lambda () (apply ,fname ,args))   ; body -- evaluatable
-			(lambda () t)       ; expected results
-			(lambda () (mapcan #'list ',(cdr form) ,args))     ; extras
-			#'EQL
-		      ))))
-
 (defmacro assert-eq (expected form &rest extras)
   "Assert whether expected and form are EQ."
   `(expand-assert :equal ,form ,form ,expected ,extras :test #'eq))
@@ -454,30 +428,55 @@ output if a test fails.
   `(expand-assert :output ,form (expand-output-form ,form)
                   ,output ,extras))
 
+(defmacro assert-nil (form &rest extras)
+  "Assert whether the form is false."
+  (if (atom form)
+      `(expand-assert :result ,form ,form nil ,extras)
+      `(expand-t-or-f nil ,form ,extras)))
+
 (defmacro assert-false (form &rest extras)
   "Assert whether the form is false."
-  `(expand-t-or-f nil ,form ,extras))
+  (if (atom form)
+      `(expand-assert :result ,form ,form nil ,extras)
+      `(expand-t-or-f nil ,form ,extras)))
 
 (defmacro assert-true (form &rest extras)
   "Assert whether the form is true."
-  `(expand-t-or-f t ,form ,extras))
+  (if (atom form)
+      `(expand-assert :result ,form ,form t ,extras)
+      `(expand-t-or-f t ,form ,extras)))
 
 (defmacro expand-t-or-f (t-or-f form extras)
   "Expand the true/false assertions to report the arguments."
-  (let ((args (gensym))
-	(fname (gensym)))
-    `(let ((,args (list ,@(cdr form)))
-	   (,fname #',(car form)))
-       (internal-assert
-        :result ',form
-        (lambda () (apply ,fname ,args)) ; Evaluate the form
-        (lambda () ,t-or-f)
-        ;; Concatenate the args with the extras
-        (lambda ()
-          (nconc
-           (mapcan #'list ',(cdr form) ,args)
-           (funcall (expand-extras ,extras))))
-        #'eql))))
+  (let ((fname (gensym))
+        (args (gensym)))
+    `(let ((,fname ',(car form))
+           (,args (list ,@(cdr form))))
+       (if (macro-function ,fname)
+           ;; Do not report macro arguments
+           (internal-assert
+            :result ',form
+            (lambda () ,form)
+            (lambda () ,t-or-f)
+            ;; Concatenate the args with the extras
+            ;; FIXME: Need to test whether the args are expanded at
+            ;;        the right time
+            (lambda ()
+              (nconc
+               (mapcan #'list ',(cdr form) ,args)
+               (funcall (expand-extras ,extras))))
+            #'eql)
+           ;; Report function arguments
+           (internal-assert
+            :result ',form
+            (lambda () (apply ,fname ,args)) ; Evaluate the form
+            (lambda () ,t-or-f)
+            ;; Concatenate the args with the extras
+            (lambda ()
+              (nconc
+               (mapcan #'list ',(cdr form) ,args)
+               (funcall (expand-extras ,extras))))
+            #'eql)))))
 
 (defmacro expand-assert (type form body expected extras &key (test '#'eql))
   "Expand the assertion to the internal format."
@@ -1074,5 +1073,3 @@ vice versa."
    (listp list2)
    (apply #'subsetp list1 list2 initargs)
    (apply #'subsetp list2 list1 initargs)))
-
-(pushnew :lisp-unit common-lisp:*features*)

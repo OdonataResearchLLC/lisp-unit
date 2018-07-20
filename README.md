@@ -14,9 +14,9 @@ have been inspired by [JUnit for Java][JUnit].
 * Loadable as a single file
 * Loadable with [ASDF][] or [Quicklisp][]
 * Simple to define and run tests
-* Redfine functions and macros without reloading tests
+* Redefine functions and macros without reloading tests
 * Test return values, printed output, macro expansions, and conditions
-* Fined grained control over the testing output
+* Fine-grained control over the testing output
 * Store all test results in a database object that can be examined
 * Group tests by package for modularity
 * Group tests using tags
@@ -37,39 +37,23 @@ loaded using either [Quicklisp][] or [ASDF][].
 2. Load using [Quicklisp][] : `(ql:quickload :lisp-unit)`.
 3. Load using [ASDF][] : `(asdf:load-system :lisp-unit)`.
 
-## Version 0.9.5 Features
+## Development Plan
 
-No new features, improved the usability based on user feedback. The
-list of tests or tags to the following functions is now optional and
-defaults to `:ALL`.
+* Version 1.1.0 : Summarize test from multiple packages
+* Version 1.2.0 : Improve integration with IDE (mainly SLIME)
 
-* `(remove-tests [names] [package])`
-* `(tagged-tests [tags] [package])`
-* `(remove-tags [tags] [package])`
-* `(run-tests [names] [package])`
-* `(run-tags [tags] [package])`
+## Acknowledgments
 
-## Version 1 Remaining Tasks
-
-* (1.0.0) Expanded internal testing.
-
-### Future Features
-
-* Fixtures
-* Test Suites
-* Benchmarking tools
+Contributions to *lisp-unit* are [noted in the wiki][credits].
+Please let me know if any contributions have not been acknowledged.
 
 [orig]: <http://www.cs.northwestern.edu/academics/courses/325/readings/lisp-unit.html>
   "Original Lisp Unit"
 [wiki]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki>
   "Lisp Unit Wiki"
+[credits]: <https://github.com/OdonataResearchLLC/lisp-unit/wiki/Acknowledgments>
+  "Acknowledgments"
 [JUnit]: <http://www.junit.org> "JUnit"
 [Quicklisp]: <http://www.quicklisp.org> "Quicklisp"
 [ASDF]: <http://common-lisp.net/project/asdf/> "ASDF"
 [TAP]: <http://testanything.org/> "Test Anything Protocol"
-
-## 0.9.5 Acknowledgments
-
-* [Jesse Alama][jessealama] for usability feedback.
-
-[jessealama]: <https://github.com/jessealama> "Jesse Alama"
