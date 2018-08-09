@@ -1061,5 +1061,5 @@ vice versa."
   (and (listp l1)
        (listp l2)
        (= (length l1) (length l2))
-       (every #'(lambda (x1) (= (count x1 l1) (count x1 l2))) l1)))
+       (every #'(lambda (x1) (= (count x1 l1 :test test) (count x1 l2 :test test))) l1)))
 
