@@ -101,7 +101,7 @@
            :test-run-complete
            :results)
   ;; Utility predicates
-  (:export :logically-equal :set-equal))
+  (:export :logically-equal :set-equal :unordered-equal))
 
 (in-package :lisp-unit)
 
@@ -1052,3 +1052,14 @@ vice versa."
    (listp list2)
    (apply #'subsetp list1 list2 initargs)
    (apply #'subsetp list2 list1 initargs)))
+
+
+;;; (UNORDERED-EQUAL l1 l2 :test) => true or false
+;;;   Return true if l1 is a permuation of l2.
+
+(defun unordered-equal (l1 l2 &key (test #'equal))
+  (and (listp l1)
+       (listp l2)
+       (= (length l1) (length l2))
+       (every #'(lambda (x1) (= (count x1 l1 :test test) (count x1 l2 :test test))) l1)))
+
