@@ -75,6 +75,7 @@
            :assert-error)
   ;; Functions for managing tests
   (:export :define-test
+           :defun-test
            :list-tests
            :test-code
            :test-documentation
@@ -296,6 +297,14 @@ assertion.")
           (pushnew ,qname (gethash tag (package-tags package t))))
          ;; Return the name of the test
          ,qname))))
+
+(defmacro defun-test (name lambda-list &body body)
+  "Define a test and a function of the same name. 
+LAMBDA-LIST is a lambda list for the function, which may have &optional, &key, &aux arguments, but no manditory arguments."
+  `(progn (eval-when (:compile-toplevel :load-toplevel :execute)
+            (defun ,name ,lambda-list ,@body))
+          (eval-when (:compile-toplevel :load-toplevel :execute)
+            (define-test ,name (,name)))))
 
 ;;; Manage tests
 
