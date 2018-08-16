@@ -281,6 +281,7 @@ assertion.")
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
+  (format t "defining test ~A~%" name)
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
       `(let* ((,qname (valid-test-name ',name))
@@ -783,6 +784,7 @@ assertion.")
 
 (defun record-result (test-name code results)
   "Run the test code and record the result."
+  (format t "Beginning test ~A~%" test-name)
   (let ((result (run-test-thunk test-name code)))
     ;; Store the result
     (setf (gethash test-name (database results)) result)
