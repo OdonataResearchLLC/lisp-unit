@@ -810,6 +810,7 @@ assertion.")
   "Print a summary of all results to the stream."
   (let ((pass (pass results))
         (fail (fail results)))
+    ;; fixing issue #47
     (maphash (lambda (test-name result)
                (when (fail result)
                  (format stream " |    failed: ~A~%" test-name))) (database results))
