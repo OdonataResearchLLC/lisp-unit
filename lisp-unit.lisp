@@ -80,6 +80,7 @@
            :test-documentation
            :remove-tests
            :run-tests
+           :run-1-test
            :use-debugger)
   ;; Functions for managing tags
   (:export :list-tags
@@ -944,6 +945,14 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
      (when *summarize-results*
        (summarize-results results))
      (return results))))
+
+(defun run-1-test (test-name)
+  "Run the test designated by the given TEST-NAME"
+  (let ((*print-summary* t)
+	(*print-failures* t)
+	(*summarize-results* t)
+	(*print-errors* t))
+   (run-tests (list test-name) (symbol-package test-name))))
 
 (defun run-tests (&optional (test-names :all) (package *package*))
   "Run the specified tests in package."
