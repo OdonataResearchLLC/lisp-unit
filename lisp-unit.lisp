@@ -946,6 +946,7 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
        (summarize-results results))
      (return results))))
 
+;; fix for issue #47
 (defun run-1-test (test-name)
   "Run the test designated by the given TEST-NAME"
   (let ((*print-summary* t)
