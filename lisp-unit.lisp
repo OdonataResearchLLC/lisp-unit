@@ -281,6 +281,7 @@ assertion.")
 
 (defmacro define-test (name &body body)
   "Store the test in the test database."
+  (format t "defining test ~A~%" name)
   (let ((qname (gensym "NAME-")))
     (multiple-value-bind (doc tag code) (parse-body body)
       `(let* ((,qname (valid-test-name ',name))
@@ -783,6 +784,7 @@ assertion.")
 
 (defun record-result (test-name code results)
   "Run the test code and record the result."
+  (format t "Beginning test ~A~%" test-name)
   (let ((result (run-test-thunk test-name code)))
     ;; Store the result
     (setf (gethash test-name (database results)) result)
@@ -808,6 +810,12 @@ assertion.")
   "Print a summary of all results to the stream."
   (let ((pass (pass results))
         (fail (fail results)))
+    (maphash (lambda (test-name result)
+               (when (fail result)
+                 (format stream " |    failed: ~A~%" test-name))) (database results))
+    (maphash (lambda (test-name result)
+               (when (exerr result)
+                 (format stream " |    error: ~A~%" test-name))) (database results)) 
     (format stream "~&Unit Test Summary~%")
     (format stream " | ~D assertions total~%" (+ pass fail))
     (format stream " | ~D passed~%" pass)
@@ -916,7 +924,12 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
      for test-name being each hash-key in table
      using (hash-value unit-test)
      if unit-test do
-     (record-result test-name (code unit-test) results)
+       (let ((start-time (get-internal-real-time)))
+         (prog2 (format t "~A ~A~%" package test-name)
+             (record-result test-name (code unit-test) results)
+           (format t "~A ~A ~F seconds~%~%" package test-name
+                   (/ (- (get-internal-real-time) start-time)
+                      internal-time-units-per-second))))
      else do
      (push test-name (missing-tests results))
      ;; Summarize and return the test results
@@ -935,7 +948,12 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
      for test-name in test-names
      as unit-test = (gethash test-name table)
      if unit-test do
-     (record-result test-name (code unit-test) results)
+       (let ((start-time (get-internal-real-time)))
+         (prog2 (format t "~A ~A~%" package test-name)
+             (record-result test-name (code unit-test) results)
+           (format t "~A ~A ~F seconds~%~%" package test-name
+                   (/ (- (get-internal-real-time) start-time)
+                      internal-time-units-per-second))))
      else do
      (push test-name (missing-tests results))
      finally
@@ -969,7 +987,7 @@ If MERGE is NIL, then an error is signalled when a conflict occurs."
   (format stream "~& | Failed Form: ~S" (form result))
   (call-next-method)
   (when (extras result)
-    (format stream "~{~& | ~S => ~S~}~%" (extras result)))
+    (format stream "~{~& | ~S ~%   => ~S~}~%" (extras result)))
   (format stream "~& |~%"))
 
 (defmethod print-failures ((result failure-result) &optional
