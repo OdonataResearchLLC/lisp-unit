@@ -298,6 +298,7 @@ assertion.")
          ;; Return the name of the test
          ,qname))))
 
+;; function requested in issue #53
 (defmacro defun-test (name lambda-list &body body)
   "Define a test and a function of the same name. 
 LAMBDA-LIST is a lambda list for the function, which may have &optional, &key, &aux arguments, but no manditory arguments."
