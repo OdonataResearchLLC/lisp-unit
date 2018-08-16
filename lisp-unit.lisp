@@ -467,6 +467,7 @@ assertion.")
            ;; Report function arguments
            (internal-assert
             :result ',form
+            ;; fix issue #44
             (lambda () ,form) ; Evaluate the form ; JN just insert ,form rather than (funcall ,fname ...).  Because, we are not sure that fname is funcallable
             (lambda () ,t-or-f)
             ;; Concatenate the args with the extras
