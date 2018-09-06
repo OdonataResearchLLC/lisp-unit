@@ -467,7 +467,13 @@ assertion.")
            ;; Report function arguments
            (internal-assert
             :result ',form
-            (lambda () (apply ,fname ,args)) ; Evaluate the form
+            ;; fix issue #44
+	    ;; JN we can't insert ,fname because it might be a local function and that is not funcallable by quoted name.
+	    ;; so we have to use ,(car form) as that's the user given function name
+	    ;; we still can't apply that because it might be a local function
+	    ;; so we have to wrap it in (function ...) which tells the compiler to look for the function
+	    ;;   by correct scoping rules.
+	    (lambda () (apply (function ,(car form)) ,args)) 
             (lambda () ,t-or-f)
             ;; Concatenate the args with the extras
             (lambda ()
